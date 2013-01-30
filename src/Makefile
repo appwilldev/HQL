@@ -75,8 +75,8 @@ OBJS = parser.o tokens.o ast.o ast_util.o cmd.o  \
        model.o trollers.o type_config.o
 
 parser: $(OBJS) test.o ../vendor/libjson.a
-	g++ -Wall -o $@ $^
+	g++ -Wall -o ../$@ $^
 
 luamod: $(OBJS) lua_api.o ../vendor/libjson.a
 	@echo "building hql tools"
-	g++ $(DYLIB_CC_OPT) -o hql.so $^
+	g++ $(DYLIB_CC_OPT) -o ../hql.so $^
