@@ -1,0 +1,11 @@
+*.o
+*.a
+*.so
+a.out
+parser
+parser.output
+html/
+parser.hpp
+parser.cpp
+tokens.cpp
+xmatch

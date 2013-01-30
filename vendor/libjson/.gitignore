@@ -1,0 +1,8 @@
+*~
+#*.pdf
+._*
+#Getting Started/
+_internal/TestSuite/
+_internal/TestSuite2/
+
+

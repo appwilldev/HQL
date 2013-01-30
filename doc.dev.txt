@@ -1,0 +1,51 @@
+# -*- org -*-
+
+* Node Type
+  - SLALL
+  - SLCond
+  - SLFKALL
+  - SLFKCond
+  - RL
+  - Logic: AND,OR,NOT
+  - Misc: Order-By, LIMIT
+  - Others: Matched, Error, Each, Fullname
+
+* Reduce Rule [Before Match]
+  - [X] NotNode的操作数不能是NotNode
+  - [X] AndNode的操作数不能含有AndNode(全部展开)
+  - [X] OrNode的操作数不能含有OrNode(全部展开)
+  - [X] And/Or Node的操作数最多含一个NotNode(合并多个NotNode)
+  - [ ] And Node的相同的无EACH语意操作数合并（去重）// 用户保证无此类重复？
+  - [ ] Or Node的相同的操作数合并（去重）// 用户保证无此类重复？
+  - [ ] Not操作数是CondNode并且Cond操作是GT，GE，LT，LE的，消除Not
+* Reduce Rule [After Match]
+  - [X] And Node的相同的操作数合并（去重）
+* Node Cache Key
+
+  | Node     | Abbr.                      |
+  |----------+----------------------------|
+  | Limit    | *[NODE]L<num>              |
+  | Order By | O[attr,[AD],NODE]          |
+  | Not      | ![NODE]                    |
+  | And      | &[NODE,...]                |
+  | Or       | \vert[NODE,...]            |
+  | RL       | r[NODE<lNODE,rNODE>]       |
+  | SLALL    | a[etype]                   |
+  | SLCond   | c[etype.attr,op,v]         |
+  | SLFKALL  | A[t.attr->etype]           |
+  | SLFKCond | C[t.attr->etype,attr,op,v] |
+
+* Lua API
+
+  - setup\_config(json\_string)
+  - hql2hql(hql\_string) return true, hql or false, error\_info or nil
+  - format\_hql(hql\_string) alias of hql2hql
+  - hql2cachekey(hql\_string, optional\_do\_result\_reduce\_bool)
+  - hql\_info(hql\_string) return hql info table
+  - use\_namespace(optinal\_ns\_num) return current namespace
+  - register\_troller(hql\_string, optional\_ns\_num)
+  - unregister\_troller(hql\_string, optional\_ns\_num)
+  - clear\_trollers(optional\_ns\_num)
+  - extmd\_info(optional\_ns\_num) return extmd info table
+  - trollers(optional\_ns\_num) return trollers in namespace
+  - xmatch(obj\_table, extmd\_table, optional\_ns\_num)

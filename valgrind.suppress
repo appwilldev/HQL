@@ -1,0 +1,18 @@
+{
+   dlopen
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/libdl-2.16.so
+}
+{
+   TypeConfig_sestup_from_json
+   Memcheck:Leak
+   ...
+   fun:_ZN10TypeConfig15setup_from_jsonERKSs
+}
+{
+   HQL_set_getter
+   Memcheck:Leak
+   ...
+   fun:HQL_set_getter
+}

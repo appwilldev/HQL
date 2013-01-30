@@ -1,0 +1,30 @@
+{
+"hql_namespace_num":4,
+"type":{
+    "category":{
+        "thing":[
+            "board",
+            "post"
+        ]
+    },
+
+    "entity":{
+        "user": 1,
+        "board": 2,
+        "post": 3
+    },
+
+    "relation":{
+        "comment":[
+            1,
+            "user",
+            "post"
+        ],
+        "follow":[
+            2,
+            "user",
+            "user"
+        ]
+    }
+}
+}
