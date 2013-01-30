@@ -9,7 +9,7 @@
 #define _TROLLERS_HPP
 
 #define NDEBUG
-#include "vendor/libjson/libjson.h"
+#include "../vendor/libjson/libjson.h"
 #undef  NDEBUG
 
 

@@ -20,7 +20,7 @@
 #include <tr1/memory>
 
 #define NDEBUG
-#include "vendor/libjson/libjson.h"
+#include "../vendor/libjson/libjson.h"
 #undef NDEBUG
 
 #include "model.hpp"

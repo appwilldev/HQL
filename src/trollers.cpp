@@ -13,10 +13,6 @@
 #include "ast_util.hpp"
 #include "cmn_util.hpp"
 
-#define NDEBUG
-#include "vendor/libjson/libjson.h"
-#undef NDEBUG
-
 
 void TrollersNamespace::register_troller(HQLNode *n){
     set<string> ctypes = n->get_ctypes();
