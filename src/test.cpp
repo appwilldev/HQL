@@ -19,7 +19,7 @@ extern int yylex_destroy(void);
 int main(int argc, char* argv[]){
     ifstream tc;
     string json, tmp;
-    tc.open("type.json", ifstream::in);
+    tc.open("test/type.json", ifstream::in);
     while(!tc.eof()){
         tmp.clear();
         tc >> tmp;

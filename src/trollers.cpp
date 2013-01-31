@@ -12,7 +12,7 @@
 #include "type_config.hpp"
 #include "ast_util.hpp"
 #include "cmn_util.hpp"
-
+#include "hql_xpc.hpp"
 
 void TrollersNamespace::register_troller(HQLNode *n){
     set<string> ctypes = n->get_ctypes();
@@ -112,6 +112,7 @@ void TrollersNamespace::clear(){
 uint8_t TrollersHolder::max_ns_num = 0;
 uint8_t TrollersHolder::cur_ns_num = 0;
 vector<TrollersNamespace*> TrollersHolder::namespaces;
+bool TrollersHolder::mp_mode = false;
 
 uint8_t TrollersHolder::set_max_ns_num(uint8_t m){
     if(max_ns_num > 0) return max_ns_num;
@@ -127,48 +128,75 @@ uint8_t TrollersHolder::use_namespace(uint8_t c){
     return cur_ns_num;
 }
 
-void TrollersHolder::register_troller(HQLNode *n){
-    register_troller(n, cur_ns_num);
+void TrollersHolder::register_troller(HQLNode *n, bool xpc){
+    register_troller(n, cur_ns_num, xpc);
 }
 
-void TrollersHolder::register_troller(HQLNode *n, uint8_t ns){
+void TrollersHolder::register_troller(HQLNode *n, uint8_t ns, bool xpc){
     if(ns>=namespaces.size()) return;
     namespaces[ns]->register_troller(n);
+    if(mp_mode && xpc){
+        int64_t id = HQLXPController::get_id();
+        HQLXPController::add_delta(
+            HQLXPCDelta::ADD, id, 1, ns, n->to_hql().c_str());
+    }
 }
 
-void TrollersHolder::unregister_troller(HQLNode *n){
-    unregister_troller(n, cur_ns_num);
+void TrollersHolder::unregister_troller(HQLNode *n, bool xpc){
+    unregister_troller(n, cur_ns_num, xpc);
 }
 
-void TrollersHolder::unregister_troller(HQLNode *n, uint8_t ns){
+void TrollersHolder::unregister_troller(HQLNode *n, uint8_t ns, bool xpc){
     if(ns>=namespaces.size()) return;
     namespaces[ns]->unregister_troller(n);
+    if(mp_mode && xpc){
+        int64_t id = HQLXPController::get_id();
+        HQLXPController::add_delta(
+            HQLXPCDelta::DEL, id, 1, ns, n->to_hql().c_str());
+    }
 }
 
-void TrollersHolder::clear_trollers(){
-    clear_trollers(cur_ns_num);
+void TrollersHolder::clear_trollers(bool xpc){
+    clear_trollers(cur_ns_num, xpc);
 }
 
-void TrollersHolder::clear_trollers(uint8_t ns){
+void TrollersHolder::clear_trollers(uint8_t ns, bool xpc){
     if(ns>=namespaces.size()) return;
     namespaces[ns]->clear();
+    if(mp_mode && xpc){
+        int64_t id = HQLXPController::get_id();
+        HQLXPController::add_delta(
+            HQLXPCDelta::CLR, id, 1, ns, NULL);
+    }
 }
 
 map<uint64_t, set<string> > TrollersHolder::xmatch(const string &m, ModelGetter *getter){
+    if(mp_mode){
+        HQLXPController::check_delta();
+    }
     return xmatch(m, getter, cur_ns_num);
 }
 
 map<uint64_t, set<string> > TrollersHolder::xmatch(const string &m, ModelGetter *getter, uint8_t ns){
+    if(mp_mode){
+        HQLXPController::check_delta();
+    }
     if(ns>= namespaces.size()) return map<uint64_t, set<string> >();
     return namespaces[ns]->xmatch(m, getter);
 }
 
 
 map<uint64_t, set<string> > TrollersHolder::xmatch(const JSONNode &n, ModelGetter *getter){
+    if(mp_mode){
+        HQLXPController::check_delta();
+    }
     return xmatch(n, getter, cur_ns_num);
 }
 
 map<uint64_t, set<string> > TrollersHolder::xmatch(const JSONNode &n, ModelGetter *getter, uint8_t ns){
+    if(mp_mode){
+        HQLXPController::check_delta();
+    }
     if(ns>=namespaces.size()) return map<uint64_t, set<string> >();
     return namespaces[ns]->xmatch(n, getter);
 }

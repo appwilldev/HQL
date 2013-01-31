@@ -50,14 +50,14 @@ public:
     static uint8_t set_max_ns_num(uint8_t);
     static uint8_t use_namespace(uint8_t);
 
-    static void register_troller(HQLNode*);
-    static void register_troller(HQLNode*, uint8_t ns);
+    static void register_troller(HQLNode*, bool xpc=false);
+    static void register_troller(HQLNode*, uint8_t ns, bool xpc=false);
 
-    static void unregister_troller(HQLNode*);
-    static void unregister_troller(HQLNode*, uint8_t ns);
+    static void unregister_troller(HQLNode*, bool xpc=false);
+    static void unregister_troller(HQLNode*, uint8_t ns, bool xpc=false);
 
-    static void clear_trollers();
-    static void clear_trollers(uint8_t ns);
+    static void clear_trollers(bool xpc=false);
+    static void clear_trollers(uint8_t ns, bool xpc=false);
 
     static map<uint64_t, set<string> > xmatch(const string&, ModelGetter*);
     static map<uint64_t, set<string> > xmatch(const string&, ModelGetter*, uint8_t ns);
@@ -74,6 +74,7 @@ public:
     static vector<TrollersNamespace*> namespaces;
     static uint8_t max_ns_num;
     static uint8_t cur_ns_num;
+    static bool mp_mode;
 };
 
 

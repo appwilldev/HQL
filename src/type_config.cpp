@@ -14,6 +14,7 @@
 
 #include "trollers.hpp"
 #include "type_config.hpp"
+#include "hql_xpc.hpp"
 
 TypeModel::TypeModel(uint8_t _id, string _name):
     id(_id), name(_name)
@@ -82,6 +83,13 @@ void TypeConfig::setup_from_json(const string &json)
         }else{
             TrollersHolder::set_max_ns_num(static_cast<uint8_t>(it->as_int()));
         }
+
+        it = n.find("hql_mp_mode");
+        TrollersHolder::mp_mode = it!=n.end() && it->type()==JSON_BOOL && it->as_bool();
+        if(TrollersHolder::mp_mode){
+            HQLXPController::setup();
+        }
+
         it = n.find("type");
         if(it == n.end() || it->type()!=JSON_NODE){
             goto error;

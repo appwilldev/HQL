@@ -26,8 +26,8 @@ all: parser
 
 clean:
 	-rm parser.cpp parser.hpp tokens.cpp
-	-rm parser
-	-rm *.o *.so
+	-rm ../parser
+	-rm *.o *.so ../*.so
 
 distclean: clean
 	-rm ../vendor/*.a
@@ -61,6 +61,7 @@ ast_logic.o: ast.hpp ast_util.hpp concrete_ast.hpp model.hpp ast_logic.cpp
 ast_misc.o: cmn_util.hpp ast.hpp concrete_ast.hpp model.hpp ast_misc.cpp
 ast_util.o: ast.hpp ast_util.hpp ast_util.cpp
 trollers.o: cmn_util.hpp ast_util.hpp ast.hpp type_config.hpp trollers.hpp model.hpp trollers.cpp
+hql_xpc.o: ast_util.hpp trollers.hpp hql_xpc.hpp hql_xpc.cpp
 cmd.o: cmd.hpp cmd.cpp
 test.o: parser.hpp ast.hpp test.cpp type_config.hpp cmn_util.hpp
 
@@ -72,7 +73,7 @@ model.o: model.hpp model.cpp
 
 OBJS = parser.o tokens.o ast.o ast_util.o cmd.o  \
        ast_basic.o ast_sl.o ast_slfk.o ast_rl.o ast_logic.o ast_misc.o \
-       model.o trollers.o type_config.o
+       model.o trollers.o type_config.o hql_xpc.o
 
 parser: $(OBJS) test.o ../vendor/libjson.a
 	g++ -Wall -o ../$@ $^

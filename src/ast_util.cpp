@@ -17,6 +17,7 @@ struct yy_buffer_state;
 typedef yy_buffer_state *YY_BUFFER_STATE;
 extern YY_BUFFER_STATE yy_scan_string(const char *str);
 extern int yyparse();
+extern int yylex_destroy(void);
 
 HQLNode* ASTUtil::parser_hql(const string &hql)
 {
@@ -25,11 +26,13 @@ HQLNode* ASTUtil::parser_hql(const string &hql)
     s = s + ">>;";
     yy_scan_string(s.c_str());
     yyparse();
+    yylex_destroy();
     HQLNode *n = ShellState::top_hql();
-    if(n){
+    if(n && !n->error()){
         return n;
     }
-    return new ErrorNode("parser error: " + hql);
+    return NULL;
+    //return new ErrorNode("parser error: " + hql);
 }
 
 Model ASTUtil::get_model(uint64_t fn, ModelGetter *model_getter)
