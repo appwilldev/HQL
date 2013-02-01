@@ -44,7 +44,6 @@ struct HQLXPCDeltaInfo
 struct HQLXPCElement
 {
     int ns;
-    HQLXPCElement *next;
     char data[512];
 };
 

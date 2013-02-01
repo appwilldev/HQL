@@ -86,9 +86,6 @@ void TypeConfig::setup_from_json(const string &json)
 
         it = n.find("hql_mp_mode");
         TrollersHolder::mp_mode = it!=n.end() && it->type()==JSON_BOOL && it->as_bool();
-        if(TrollersHolder::mp_mode){
-            HQLXPController::setup();
-        }
 
         it = n.find("type");
         if(it == n.end() || it->type()!=JSON_NODE){
@@ -185,6 +182,11 @@ void TypeConfig::setup_from_json(const string &json)
                 }
                 ++cit;
             }
+        }
+
+        // setup xpc(mp-mode)
+        if(TrollersHolder::mp_mode){
+            HQLXPController::setup();
         }
     }catch(std::invalid_argument e){
         goto error;
