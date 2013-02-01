@@ -44,7 +44,7 @@ void HQLXPController::setup()
     pid_t ppid = getppid();
     struct stat kf_stat;
 
-    int klen = sprintf(key_path, "/tmp/HQL_SHMKEY_%d", 0);//ppid);
+    int klen = sprintf(key_path, "/tmp/HQL_SHMKEY_%d", ppid);
     key_path[klen] = 0;
     if(stat(key_path, &kf_stat)){
         if(errno == ENOENT){
@@ -66,7 +66,8 @@ void HQLXPController::setup()
         puts("can not create hql shm!");
         return;
     }
-    printf("kf=%s,%x,%d\n",key_path,key,shm_id);
+    fprintf(stderr, "HQL SHM INFO: KPATH=%s, KEY=0x%x, ID=%d\n",
+        key_path, key, shm_id);
     shm_start = shmat(shm_id, NULL, 0);
     if(shm_start == (void*)-1){
         enabled = false;
@@ -86,7 +87,6 @@ void HQLXPController::setup()
 
     if(shm_stat.shm_cpid == getpid()){
         //init memory
-        printf("init memory\n");
         element_info->num = 0;
         element_info->head = 0;
         element_info->tail = 0;

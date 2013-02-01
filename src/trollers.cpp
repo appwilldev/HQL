@@ -17,9 +17,21 @@
 void TrollersNamespace::register_troller(HQLNode *n){
     set<string> ctypes = n->get_ctypes();
     set<string>::iterator it = ctypes.begin();
+    bool added = false;
     for(; it!= ctypes.end(); it++){
-        trollers[*it].push_back(n->copy());
-        extmd_info[*it] += n->get_xmdinfo();
+        for(list<HQLNode*>::iterator nit = trollers[*it].begin();
+            nit != trollers[*it].end(); ){
+            if((*nit)->cache_key(false) == n->cache_key(false)){
+                added = true;
+                break;
+            }else{
+                ++nit;
+            }
+        }
+        if(!added){
+            trollers[*it].push_back(n->copy());
+            extmd_info[*it] += n->get_xmdinfo();
+        }
     }
 }
 
