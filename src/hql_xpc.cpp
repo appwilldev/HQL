@@ -37,7 +37,7 @@ void HQLXPController::setup()
     pid_t ppid = getppid();
     struct stat kf_stat;
 
-    int klen = sprintf(key_path, "/tmp/HQL_SHMKEY_%d", ppid);
+    int klen = sprintf(key_path, "/tmp/HQL_SHMKEY_%d", 0);//ppid);
     key_path[klen] = 0;
     if(stat(key_path, &kf_stat)){
         if(errno == ENOENT){
@@ -81,24 +81,27 @@ void HQLXPController::setup()
         //init memory
 
         element_info->num = 0;
-        element_info->head = NULL;
-        element_info->tail = NULL;
+        element_info->head = 0;
+        element_info->tail = 0;
 
         pthread_mutex_init(&delta_info->lock, NULL);
         delta_info->num = 0;
-        delta_info->head = NULL;
-        delta_info->tail = NULL;
+        delta_info->head = 0;
+        delta_info->tail = 0;
         delta_info->flags |= 0x01;
     }else if((delta_info->flags & 0x01) == 0x01){
-        HQLXPCElement *e = element_info->head;
+        HQLXPCElement *e = static_cast<HQLXPCElement*>(
+            (void*)((char*)ele_start + sizeof(HQLXPCElementInfo) + element_info->head));
+        HQLXPCElement *stop = static_cast<HQLXPCElement*>(
+            (void*)((char*)ele_start + sizeof(HQLXPCElementInfo) + element_info->tail));
         pthread_mutex_lock(&delta_info->lock);
-        while(e){
+        while(e != stop){
             HQLNode *n = ASTUtil::parser_hql(e->data, true);
             if(n){
                 TrollersHolder::register_troller(n, (uint8_t)(e->ns), false);
                 delete n;
             }
-            e = e->next;
+            ++e;
         }
         pthread_mutex_unlock(&delta_info->lock);
     }
@@ -116,26 +119,26 @@ void HQLXPController::add_delta(
 
     pthread_mutex_lock(&delta_info->lock);
 
-    if(delta_info->head == NULL){
+    if(delta_info->head == 0 && delta_info->tail == 0){
         delta = static_cast<HQLXPCDelta*>(
             static_cast<void*>((char*)shm_start + sizeof(HQLXPCDeltaInfo)));
-        delta_info->head = delta;
-        delta_info->tail = delta;
+        delta_info->head = 0;
+        delta_info->tail = sizeof(HQLXPCDelta);
     }else{
         delta = static_cast<HQLXPCDelta*>(
-            static_cast<void*>((char*)(delta_info->tail) + sizeof(HQLXPCDeltaInfo)));
-        delta_info->tail->next = delta;
-        delta_info->tail = delta;
+            static_cast<void*>(
+                (char*)(shm_start) + (delta_info->tail) + sizeof(HQLXPCDeltaInfo)));
+        delta_info->tail += sizeof(HQLXPCDelta);
     }
 
     delta->id = id;
     delta->nprocess = nprocess;
     delta->ns = ns;
-    delta->next = NULL;
     delta->action = act;
     if(act==HQLXPCDelta::ADD || act==HQLXPCDelta::DEL){
         memset(delta->data, 0, 512);
         memcpy(delta->data, hql, strlen(hql));
+        printf("ADD DELTA:%s\n", delta->data);
     }
     ++delta_info->num;
     handled_ids.insert(id);
@@ -146,7 +149,7 @@ void HQLXPController::add_delta(
         {
             //TODO
             break;
-        }
+         }
     case HQLXPCDelta::DEL:
         {
             //TODO
@@ -155,8 +158,8 @@ void HQLXPController::add_delta(
     case HQLXPCDelta::CLR:
         {
             element_info->num = 0;
-            element_info->head = NULL;
-            element_info->tail = NULL;
+            element_info->head = 0;
+            element_info->tail = 0;
             break;
         }
     default:
@@ -170,10 +173,29 @@ void HQLXPController::add_delta(
 void HQLXPController::check_delta()
 {
     if(delta_info->num <= 0) return;
-    HQLXPCDelta *delta;
+    HQLXPCDelta *delta = (HQLXPCDelta*)((char*)shm_start + sizeof(HQLXPCDeltaInfo) + delta_info->head);
+    HQLXPCDelta *stop = (HQLXPCDelta*)((char*)shm_start + sizeof(HQLXPCDeltaInfo) + delta_info->tail);
+    struct shmid_ds shm_stat;
 
-    delta = delta_info->head;
-    if(handled_ids.find(delta->id)!=handled_ids.end()) { // in set
-
+    while(delta != stop){
+        printf("check delta\n");
+        if(handled_ids.find(delta->id) == handled_ids.end()) { // not in set
+            printf("--->1:%p - %p - %p\n", shm_start, delta_info, delta);
+            printf("!!!DLD:%s\n", delta->data);
+            printf("----2\n");
+            HQLNode *n = ASTUtil::parser_hql(delta->data, true);
+            if(n){
+                TrollersHolder::register_troller(n, (uint8_t)(delta->ns), false);
+                delete n;
+            }
+            handled_ids.insert(delta->id);
+            ++(delta->nprocess);
+            shmctl(shm_id, IPC_STAT, &shm_stat);
+            if(delta->nprocess >= shm_stat.shm_nattch){
+                delta_info->head += sizeof(HQLXPCDelta);
+                --(delta_info->num);
+            }
+        }
+        ++delta;
     }
 }

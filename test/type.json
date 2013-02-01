@@ -1,6 +1,6 @@
 {
 "hql_namespace_num":4,
-"hql_mp_mode": false,
+"hql_mp_mode": true,
 "type":{
     "category":{
         "thing":[

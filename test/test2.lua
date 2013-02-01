@@ -43,7 +43,7 @@ function table_print(t)
 end
 
 str = table_print
-
+pt=function(t) print(table_print(t)) end
 
 ---
 --- setup type config
@@ -68,4 +68,4 @@ hql.register_troller(s)
 print(hql.hql2cachekey(s))
 print(hql.hql2cachekey(s,true))
 print(hql.hql2cachekey(s,false))
-print('>>>', str(hql.xmatch(test_data.u1, test_data.database)))
+--print('>>>', str(hql.xmatch(test_data.u1, test_data.database)))

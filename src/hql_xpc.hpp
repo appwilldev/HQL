@@ -26,20 +26,19 @@ struct HQLXPCDelta
     };
 
     int64_t      id;
-    int          nprocess;
-    int          ns;
+    uint32_t     nprocess;
+    uint32_t     ns;
     Action       action;
-    HQLXPCDelta *next;
     char         data[512];
 };
 
 struct HQLXPCDeltaInfo
 {
-    int          flags;
+    int             flags;
     pthread_mutex_t lock;
-    uint32_t     num;
-    HQLXPCDelta *head;
-    HQLXPCDelta *tail;
+    uint32_t        num;
+    long            head;
+    long            tail;
 };
 
 struct HQLXPCElement
@@ -51,9 +50,9 @@ struct HQLXPCElement
 
 struct HQLXPCElementInfo
 {
-    uint32_t       num;
-    HQLXPCElement *head;
-    HQLXPCElement *tail;
+    uint32_t   num;
+    long       head;
+    long       tail;
 };
 
 class HQLXPController
