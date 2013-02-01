@@ -131,6 +131,102 @@ private:
 };
 
 
+template<bool xpc>
+static int _hql_register_troller(lua_State *L) {
+    uint8_t ns = 0;
+    if(lua_gettop(L) == 2){
+        ns = static_cast<uint8_t>(lua_tonumber(L, -1));
+        lua_pop(L, 1);
+    }else{
+        ns = TrollersHolder::cur_ns_num;
+    }
+
+    if(!lua_isstring(L, -1)){
+        lua_pop(L, 1);
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+    // SAVE <<HQL>>
+    // HQLNode -> lua,
+    // POP
+    string s = string("SAVE <<");
+    s = s + lua_tostring(L, -1);
+    s = s + ">>;";
+    yy_scan_string(s.c_str());
+    yyparse();
+    yylex_destroy();
+    lua_pop(L, 1);
+    HQLNode *n = ShellState::top_hql();
+    if(n){
+        if(n->error()){
+            lua_pushboolean(L, 0);
+        }else{
+            TrollersHolder::register_troller(n, ns, xpc);
+            lua_pushboolean(L, 1);
+        }
+        ShellState::pop_hql();
+    }else{
+        lua_pushboolean(L, 0);
+    }
+    return 1;
+}
+
+template<bool xpc>
+static int _hql_unregister_troller(lua_State *L) {
+    uint8_t ns = 0;
+    if(lua_gettop(L) == 2){
+        ns = static_cast<uint8_t>(lua_tonumber(L, -1));
+        lua_pop(L, 1);
+    }else{
+        ns = TrollersHolder::cur_ns_num;
+    }
+
+    if(!lua_isstring(L, -1)){
+        lua_pop(L, 1);
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+    // SAVE <<HQL>>
+    // HQLNode -> lua,
+    // POP
+    string s = string("SAVE <<");
+    s = s + lua_tostring(L, -1);
+    s = s + ">>;";
+    yy_scan_string(s.c_str());
+    yyparse();
+    yylex_destroy();
+    lua_pop(L, 1);
+    HQLNode *n = ShellState::top_hql();
+    if(n){
+        if(n->error()){
+            lua_pushboolean(L, 0);
+        }else{
+            TrollersHolder::unregister_troller(n, ns, xpc);
+            lua_pushboolean(L, 1);
+        }
+        ShellState::pop_hql();
+    }else{
+        lua_pushboolean(L, 0);
+    }
+    return 1;
+}
+
+template<bool xpc>
+static int _hql_clear_trollers(lua_State *L) {
+    uint8_t ns = 0;
+    if(lua_gettop(L) == 1){
+        ns = static_cast<uint8_t>(lua_tonumber(L, -1));
+        lua_pop(L, 1);
+    }else{
+        ns = TrollersHolder::cur_ns_num;
+    }
+
+    TrollersHolder::clear_trollers(ns, xpc);
+    lua_pushnumber(L, ns);
+    return 1;
+}
+
+
 extern "C" {
 
     /*
@@ -161,95 +257,27 @@ extern "C" {
     }
 
     static int HQL_register_troller(lua_State *L) {
-        uint8_t ns = 0;
-        if(lua_gettop(L) == 2){
-            ns = static_cast<uint8_t>(lua_tonumber(L, -1));
-            lua_pop(L, 1);
-        }else{
-            ns = TrollersHolder::cur_ns_num;
-        }
+        return _hql_register_troller<false>(L);
+    }
 
-        if(!lua_isstring(L, -1)){
-            lua_pop(L, 1);
-            lua_pushboolean(L, 0);
-            return 1;
-        }
-        // SAVE <<HQL>>
-        // HQLNode -> lua,
-        // POP
-        string s = string("SAVE <<");
-        s = s + lua_tostring(L, -1);
-        s = s + ">>;";
-        yy_scan_string(s.c_str());
-        yyparse();
-        yylex_destroy();
-        lua_pop(L, 1);
-        HQLNode *n = ShellState::top_hql();
-        if(n){
-            if(n->error()){
-                lua_pushboolean(L, 0);
-            }else{
-                TrollersHolder::register_troller(n, ns);
-                lua_pushboolean(L, 1);
-            }
-            ShellState::pop_hql();
-        }else{
-            lua_pushboolean(L, 0);
-        }
-        return 1;
+    static int HQL_xregister_troller(lua_State *L) {
+        return _hql_register_troller<true>(L);
     }
 
     static int HQL_unregister_troller(lua_State *L) {
-        uint8_t ns = 0;
-        if(lua_gettop(L) == 2){
-            ns = static_cast<uint8_t>(lua_tonumber(L, -1));
-            lua_pop(L, 1);
-        }else{
-            ns = TrollersHolder::cur_ns_num;
-        }
+        return _hql_unregister_troller<false>(L);
+    }
 
-        if(!lua_isstring(L, -1)){
-            lua_pop(L, 1);
-            lua_pushboolean(L, 0);
-            return 1;
-        }
-        // SAVE <<HQL>>
-        // HQLNode -> lua,
-        // POP
-        string s = string("SAVE <<");
-        s = s + lua_tostring(L, -1);
-        s = s + ">>;";
-        yy_scan_string(s.c_str());
-        yyparse();
-        yylex_destroy();
-        lua_pop(L, 1);
-        HQLNode *n = ShellState::top_hql();
-        if(n){
-            if(n->error()){
-                lua_pushboolean(L, 0);
-            }else{
-                TrollersHolder::unregister_troller(n, ns);
-                lua_pushboolean(L, 1);
-            }
-            ShellState::pop_hql();
-        }else{
-            lua_pushboolean(L, 0);
-        }
-        return 1;
+    static int HQL_xunregister_troller(lua_State *L) {
+        return _hql_unregister_troller<true>(L);
     }
 
     static int HQL_clear_trollers(lua_State *L) {
-        uint8_t ns = 0;
-        if(lua_gettop(L) == 1){
-            ns = static_cast<uint8_t>(lua_tonumber(L, -1));
-            lua_pop(L, 1);
-        }else{
-            ns = TrollersHolder::cur_ns_num;
-        }
+        return _hql_clear_trollers<false>(L);
+    }
 
-        TrollersHolder::clear_trollers(ns);
-        lua_pushnumber(L, ns);
-        return 1;
+    static int HQL_xclear_trollers(lua_State *L) {
+        return _hql_clear_trollers<true>(L);
     }
 
     static int HQL_hql2hql(lua_State *L) {
@@ -526,8 +554,11 @@ extern "C" {
         {"setup_config", HQL_setup_config},
         {"use_namespace", HQL_use_namespace}, // non-arg for current namespace
         {"register_troller", HQL_register_troller}, // ns
+        {"xregister_troller", HQL_xregister_troller}, // ns
         {"unregister_troller", HQL_unregister_troller}, // ns
+        {"xunregister_troller", HQL_xunregister_troller}, // ns
         {"clear_trollers", HQL_clear_trollers}, // ns
+        {"xclear_trollers", HQL_xclear_trollers}, // ns
         {"trollers", HQL_all_trollers}, // ns
         {"hql2hql", HQL_hql2hql},
         {"format_hql", HQL_hql2hql},

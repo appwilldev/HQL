@@ -68,6 +68,7 @@ void HQLXPController::setup()
     }
     enabled = true;
 
+    cur_delta_id = static_cast<int64_t>(getpid()) << 32;
 
     delta_info = static_cast<HQLXPCDeltaInfo*>(shm_start);
     ele_start = (char*)shm_start + SHM_PAGE_NUM*4096/2;
@@ -78,7 +79,6 @@ void HQLXPController::setup()
 
     if(shm_stat.shm_cpid == getpid()){
         //init memory
-        printf("init shm!\n");
 
         element_info->num = 0;
         element_info->head = NULL;
