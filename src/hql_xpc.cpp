@@ -93,9 +93,10 @@ void HQLXPController::setup()
         HQLXPCElement *e = element_info->head;
         pthread_mutex_lock(&delta_info->lock);
         while(e){
-            HQLNode *n = ASTUtil::parser_hql(e->data);
+            HQLNode *n = ASTUtil::parser_hql(e->data, true);
             if(n){
                 TrollersHolder::register_troller(n, (uint8_t)(e->ns), false);
+                delete n;
             }
             e = e->next;
         }
@@ -137,6 +138,30 @@ void HQLXPController::add_delta(
         memcpy(delta->data, hql, strlen(hql));
     }
     ++delta_info->num;
+    handled_ids.insert(id);
+
+    //fill the shm dynamic elements
+    switch(delta->action){
+    case HQLXPCDelta::ADD:
+        {
+            //TODO
+            break;
+        }
+    case HQLXPCDelta::DEL:
+        {
+            //TODO
+            break;
+        }
+    case HQLXPCDelta::CLR:
+        {
+            element_info->num = 0;
+            element_info->head = NULL;
+            element_info->tail = NULL;
+            break;
+        }
+    default:
+        break;
+    }
 
     pthread_mutex_unlock(&delta_info->lock);
 }

@@ -19,8 +19,9 @@ extern YY_BUFFER_STATE yy_scan_string(const char *str);
 extern int yyparse();
 extern int yylex_destroy(void);
 
-HQLNode* ASTUtil::parser_hql(const string &hql)
+HQLNode* ASTUtil::parser_hql(const string &hql, bool autopop)
 {
+    HQLNode *ret = NULL;
     string s = string("SAVE <<");
     s = s + hql;
     s = s + ">>;";
@@ -28,10 +29,15 @@ HQLNode* ASTUtil::parser_hql(const string &hql)
     yyparse();
     yylex_destroy();
     HQLNode *n = ShellState::top_hql();
-    if(n && !n->error()){
-        return n;
+    if(n){
+        if(!n->error()){
+            ret = autopop ? n->copy() : n;
+        }
+        if(autopop){
+            ShellState::pop_hql();
+        }
     }
-    return NULL;
+    return ret;
     //return new ErrorNode("parser error: " + hql);
 }
 

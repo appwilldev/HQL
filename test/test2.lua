@@ -1,5 +1,7 @@
 #!/usr/bin/env lua
 
+
+package.cpath = "../?.so;" .. package.cpath;
 hql = require('hql')
 
 ---
