@@ -14,12 +14,6 @@
 #include "trollers.hpp"
 #include "cmn_util.hpp"
 
-struct yy_buffer_state;
-typedef yy_buffer_state *YY_BUFFER_STATE;
-extern YY_BUFFER_STATE yy_scan_string(const char *str);
-extern int yyparse();
-extern int yylex_destroy(void);
-
 #include <iostream>
 #include <fstream>
 
