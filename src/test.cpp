@@ -38,5 +38,6 @@ int main(int argc, char* argv[]){
     yylex_init_extra(shell, &scanner);
     yyparse(scanner);
     yylex_destroy(scanner);
+    delete shell;
     TypeConfig::clear();
 }
