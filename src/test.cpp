@@ -12,9 +12,14 @@ using std::ifstream;
 #include "parser.hpp"
 #include "type_config.hpp"
 
-extern int yylex();
-extern int yyparse();
-extern int yylex_destroy(void);
+#define YY_EXTRA_TYPE void*
+typedef void* yyscan_t;
+
+extern int yylex(yyscan_t);
+extern int yylex_init(yyscan_t*);
+extern int yylex_init_extra(YY_EXTRA_TYPE, yyscan_t*);
+extern int yyparse(yyscan_t);
+extern int yylex_destroy(yyscan_t);
 
 int main(int argc, char* argv[]){
     ifstream tc;
@@ -27,7 +32,11 @@ int main(int argc, char* argv[]){
     }
     tc.close();
     TypeConfig::setup_from_json(json);
-    yyparse();
-    yylex_destroy();
+
+    yyscan_t scanner;
+    ShellState *shell = new ShellState();
+    yylex_init_extra(shell, &scanner);
+    yyparse(scanner);
+    yylex_destroy(scanner);
     TypeConfig::clear();
 }

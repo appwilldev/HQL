@@ -25,7 +25,7 @@ class ModelGetter;
 
 class ASTUtil{
 public:
-    static HQLNode* parser_hql(const string &s, bool autopop=true);
+    static HQLNode* parser_hql(const string &s);
     static Model get_model(uint64_t, ModelGetter*);
     static vector<uint64_t> get_relations(const string &rel_key, ModelGetter*);
 };

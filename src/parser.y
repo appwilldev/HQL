@@ -5,6 +5,8 @@
  *
  */
 
+%define api.pure
+
 %{
 #include "cmn_util.hpp"
 #include "concrete_ast.hpp"
@@ -27,9 +29,17 @@ using std::vector;
 #endif
 
 
-extern int yylex();
+#define YYPARSE_PARAM scanner
+#define YYLEX_PARAM   scanner
+
+union YYSTYPE;
+typedef void* yyscan_t;
+extern int yylex(YYSTYPE*, yyscan_t);
 void yyerror(const char *s) { printf("ERROR: %s\n", s); }
 
+#define YY_EXTRA_TYPE  void*
+YY_EXTRA_TYPE  yyget_extra ( yyscan_t scanner );
+void           yyset_extra ( YY_EXTRA_TYPE arbitrary_data , yyscan_t scanner);
 %}
 
 %union{
@@ -43,6 +53,7 @@ void yyerror(const char *s) { printf("ERROR: %s\n", s); }
     HQLOperand *operand;
     int64_t token;
  }
+
 
 /* tokens */
 %token <token> T_HQL_BEGIN T_HQL_END
@@ -481,11 +492,11 @@ hql : hql_ll {
     ;
 
 stmt : T_CMD ';' {
-         ShellCommand::do_cmd($1);
+         ShellCommand::do_cmd(yyget_extra(scanner), $1);
        }
      | T_CMD hql ';'{
          DEBUG("HQL CMD");
-         ShellCommand::do_cmd($1, $2);
+         ShellCommand::do_cmd(yyget_extra(scanner), $1, $2);
        }
      ;
 

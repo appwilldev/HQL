@@ -146,25 +146,12 @@ static int _hql_register_troller(lua_State *L) {
         lua_pushboolean(L, 0);
         return 1;
     }
-    // SAVE <<HQL>>
-    // HQLNode -> lua,
-    // POP
-    string s = string("SAVE <<");
-    s = s + lua_tostring(L, -1);
-    s = s + ">>;";
-    yy_scan_string(s.c_str());
-    yyparse();
-    yylex_destroy();
+    HQLNode *n = ASTUtil::parser_hql(lua_tostring(L, -1));
     lua_pop(L, 1);
-    HQLNode *n = ShellState::top_hql();
     if(n){
-        if(n->error()){
-            lua_pushboolean(L, 0);
-        }else{
-            TrollersHolder::register_troller(n, ns, xpc);
-            lua_pushboolean(L, 1);
-        }
-        ShellState::pop_hql();
+        TrollersHolder::register_troller(n, ns, xpc);
+        delete n;
+        lua_pushboolean(L, 1);
     }else{
         lua_pushboolean(L, 0);
     }
@@ -186,25 +173,13 @@ static int _hql_unregister_troller(lua_State *L) {
         lua_pushboolean(L, 0);
         return 1;
     }
-    // SAVE <<HQL>>
-    // HQLNode -> lua,
-    // POP
-    string s = string("SAVE <<");
-    s = s + lua_tostring(L, -1);
-    s = s + ">>;";
-    yy_scan_string(s.c_str());
-    yyparse();
-    yylex_destroy();
+
+    HQLNode *n = ASTUtil::parser_hql(lua_tostring(L, -1));
     lua_pop(L, 1);
-    HQLNode *n = ShellState::top_hql();
     if(n){
-        if(n->error()){
-            lua_pushboolean(L, 0);
-        }else{
-            TrollersHolder::unregister_troller(n, ns, xpc);
-            lua_pushboolean(L, 1);
-        }
-        ShellState::pop_hql();
+        TrollersHolder::unregister_troller(n, ns, xpc);
+        delete n;
+        lua_pushboolean(L, 1);
     }else{
         lua_pushboolean(L, 0);
     }
@@ -285,21 +260,12 @@ extern "C" {
             lua_pop(L, 1);
             return 0;
         }
-        // SAVE <<HQL>>
-        // HQLNode -> lua,
-        // POP
-        string s = string("SAVE <<");
-        s = s + lua_tostring(L, -1);
-        s = s + ">>;";
-        yy_scan_string(s.c_str());
-        yyparse();
-        yylex_destroy();
+        HQLNode *n = ASTUtil::parser_hql(lua_tostring(L, -1));
         lua_pop(L, 1);
-        HQLNode *n = ShellState::top_hql();
         if(n){
-            lua_pushboolean(L, !n->error());
+            lua_pushboolean(L, 1);
             string lua = n->to_hql();
-            ShellState::pop_hql();
+            delete n;
             lua_pushstring(L, lua.c_str());
         }else{
             return 0;
@@ -319,25 +285,12 @@ extern "C" {
             lua_pop(L, 1);
             return 0;
         }
-        // SAVE <<HQL>>
-        // HQLNode -> lua,
-        // POP
-        string s = string("SAVE <<");
-        s = s + lua_tostring(L, -1);
-        s = s + ">>;";
-        yy_scan_string(s.c_str());
-        yyparse();
-        yylex_destroy();
+        HQLNode *n = ASTUtil::parser_hql(lua_tostring(L, -1));
         lua_pop(L, 1);
-        HQLNode *n = ShellState::top_hql();
         if(n){
-            if(n->error()){
-                delete n;
-                return 0;
-            }
             uint8_t type_id = TypeConfig::type_id(n->get_etype());
             string lua = "LIST[" + num2str((uint8_t)type_id) + "]" + n->cache_key(do_result_reduce);
-            ShellState::pop_hql();
+            delete n;
             lua_pushstring(L, lua.c_str());
         }else{
             return 0;
@@ -427,16 +380,8 @@ extern "C" {
                 lua_settable(L, -3);
             }
         }else{ // a hql
-            string s = string("SAVE <<") + m + ">>;";
-            yy_scan_string(s.c_str());
-            yyparse();
-            yylex_destroy();
-            HQLNode *n = ShellState::top_hql();
+            HQLNode *n = ASTUtil::parser_hql(m);
             if(n){
-                if(n->error()){
-                    delete n;
-                    return 1;
-                }
                 pair<string, uint64_t> ret = n->time_in();
                 if(ret.first.size()>0){
                     lua_pushstring(L, "time_in_key");
@@ -462,7 +407,7 @@ extern "C" {
                     lua_pushboolean(L, n->get_operand(1).as_num()==0);
                     lua_settable(L, -3);
                 }
-                ShellState::pop_hql();
+                delete n;
             }
         }
     end:

@@ -103,11 +103,9 @@ void HQLXPController::setup()
         HQLXPCElement *stop = XPC_ELE_TAIL;
         pthread_mutex_lock(&delta_info->lock);
         while(e != stop){
-            HQLNode *n = ASTUtil::parser_hql(e->data, true);
+            HQLNode *n = ASTUtil::parser_hql(e->data);
             if(n){
-                if(!n->error()){
-                    TrollersHolder::register_troller(n, (uint8_t)(e->ns), false);
-                }
+                TrollersHolder::register_troller(n, (uint8_t)(e->ns), false);
                 delete n;
             }
             ++e;
@@ -225,20 +223,18 @@ void HQLXPController::check_delta()
             switch(delta->action){
             case HQLXPCDelta::ADD:
                 {
-                    HQLNode *n = ASTUtil::parser_hql(delta->data, true);
+                    HQLNode *n = ASTUtil::parser_hql(delta->data);
                     if(n){
-                        if(!n->error())
-                            TrollersHolder::register_troller(n, (uint8_t)(delta->ns), false);
+                        TrollersHolder::register_troller(n, (uint8_t)(delta->ns), false);
                         delete n;
                     }
                     break;
                 }
             case HQLXPCDelta::DEL:
                 {
-                    HQLNode *n = ASTUtil::parser_hql(delta->data, true);
+                    HQLNode *n = ASTUtil::parser_hql(delta->data);
                     if(n){
-                        if(!n->error())
-                            TrollersHolder::unregister_troller(n, (uint8_t)(delta->ns), false);
+                        TrollersHolder::unregister_troller(n, (uint8_t)(delta->ns), false);
                         delete n;
                     }
                     break;

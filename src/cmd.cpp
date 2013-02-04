@@ -7,8 +7,8 @@
 
 #include "cmd.hpp"
 
-vector<HQLNode*> ShellState::hql_stack;
-vector<string> ShellState::result_stack;
+//vector<HQLNode*> ShellState::hql_stack;
+//vector<string> ShellState::result_stack;
 
 
 void ShellState::push_hql(HQLNode* n)
@@ -19,20 +19,24 @@ void ShellState::push_hql(HQLNode* n)
 }
 
 
-void ShellState::pop_hql(size_t n)
+void ShellState::pop_hql(size_t n, bool delloc)
 {
     if(n==0) return;
     size_t ssize = hql_stack.size();
     if(ssize<1) return;
     if(n >= ssize){
-        vector<HQLNode*>::iterator it = hql_stack.begin();
-        while(it!=hql_stack.end()) delete *it++;
+        if(delloc){
+            vector<HQLNode*>::iterator it = hql_stack.begin();
+            while(it!=hql_stack.end()) delete *it++;
+        }
         hql_stack.clear();
     }
     ssize = ssize - n;
     vector<HQLNode*>::iterator it = hql_stack.begin() + ssize;
     vector<HQLNode*>::iterator te = it;
-    while(it!=hql_stack.end()) delete *it++;
+    if(delloc){
+        while(it!=hql_stack.end()) delete *it++;
+    }
     hql_stack.erase(te, hql_stack.end());
 }
 
@@ -43,10 +47,10 @@ HQLNode* ShellState::top_hql(){
 }
 
 
-bool ShellCommand::do_cmd(ShellCommand::CMD cmd){
+bool ShellCommand::do_cmd(void *sh, ShellCommand::CMD cmd){
     switch(cmd){
     case POP_HQL:
-        ShellState::pop_hql();
+        ((ShellState*)sh)->pop_hql();
         return true;
         break;
     default:
@@ -55,10 +59,10 @@ bool ShellCommand::do_cmd(ShellCommand::CMD cmd){
     return false;
 }
 
-bool ShellCommand::do_cmd(ShellCommand::CMD cmd, HQLNode* n){
+bool ShellCommand::do_cmd(void *sh, ShellCommand::CMD cmd, HQLNode* n){
     switch(cmd){
     case PUSH_HQL:
-        ShellState::push_hql(n);
+        ((ShellState*)sh)->push_hql(n);
         return true;
         break;
     default:
@@ -66,5 +70,3 @@ bool ShellCommand::do_cmd(ShellCommand::CMD cmd, HQLNode* n){
     }
     return false;
 }
-
-

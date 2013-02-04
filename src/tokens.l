@@ -6,6 +6,8 @@
  */
 
 %option noyywrap
+%option reentrant
+%option bison-bridge
 
 %{
 
@@ -24,10 +26,10 @@ using std::vector;
 #define DEBUGF(x,...)
 #endif
 
-#define SAVE_STR(N) yylval.str = new string(yytext+N, yyleng-N)
-#define SAVE_COOP(t) yylval.cond_oper = COND_OPER::t
-#define SAVE_CMD(t) yylval.cmd = ShellCommand::t
-#define TOKEN(t) (yylval.token = t)
+#define SAVE_STR(N) yylval->str = new string(yytext+N, yyleng-N)
+#define SAVE_COOP(t) yylval->cond_oper = COND_OPER::t
+#define SAVE_CMD(t) yylval->cmd = ShellCommand::t
+#define TOKEN(t) (yylval->token = t)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
