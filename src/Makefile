@@ -22,6 +22,9 @@ ifeq ($(LUA_EXTRA_FLAG)X,X)
   LUA_EXTRA_FLAG := -I$(OPENRESTY)/luajit/include/luajit-2.0 -L$(OPENRESTY)/luajit/lib -lluajit-5.1
 endif
 
+PY_EXTRA_FLAG := $(shell sh -c 'pkg-config python-2.7 --cflags 2>/dev/null')
+
+
 all: parser
 
 clean:
@@ -64,12 +67,13 @@ trollers.o: cmn_util.hpp ast_util.hpp ast.hpp type_config.hpp trollers.hpp model
 hql_xpc.o: ast_util.hpp trollers.hpp hql_xpc.hpp hql_xpc.cpp
 cmd.o: cmd.hpp cmd.cpp
 test.o: parser.hpp ast.hpp test.cpp type_config.hpp cmn_util.hpp
-
+model.o: model.hpp model.cpp
 
 lua_api.o: parser.hpp cmn_util.hpp type_config.hpp ast.hpp lua_api.cpp
 lua_api.o: CXXFLAGS += $(LUA_EXTRA_FLAG)
 
-model.o: model.hpp model.cpp
+python_api.o: parser.hpp cmn_util.hpp type_config.hpp ast.hpp python_api.cpp
+python_api.o: CXXFLAGS += $(PY_EXTRA_FLAG)
 
 OBJS = parser.o tokens.o ast.o ast_util.o cmd.o  \
        ast_basic.o ast_sl.o ast_slfk.o ast_rl.o ast_logic.o ast_misc.o \
@@ -79,5 +83,9 @@ parser: $(OBJS) test.o ../vendor/libjson.a
 	g++ -Wall -o ../$@ $^
 
 luamod: $(OBJS) lua_api.o ../vendor/libjson.a
-	@echo "building hql tools"
+	@echo "building lua module: hql"
+	g++ $(DYLIB_CC_OPT) -o ../hql.so $^
+
+pymod: $(OBJS) python_api.o ../vendor/libjson.a
+	@echo "building python module: hql"
 	g++ $(DYLIB_CC_OPT) -o ../hql.so $^
