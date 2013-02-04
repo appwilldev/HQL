@@ -46,6 +46,13 @@
   - register\_troller(hql\_string, optional\_ns\_num)
   - unregister\_troller(hql\_string, optional\_ns\_num)
   - clear\_trollers(optional\_ns\_num)
+  - xregister\_troller(hql\_string, optional\_ns\_num)
+  - xunregister\_troller(hql\_string, optional\_ns\_num)
+  - xclear\_trollers(optional\_ns\_num)
   - extmd\_info(optional\_ns\_num) return extmd info table
   - trollers(optional\_ns\_num) return trollers in namespace
   - xmatch(obj\_table, extmd\_table, optional\_ns\_num)
+
+* Config
+  - "hql\_namespace\_num":4,
+  - "hql\_mp\_mode": true,
