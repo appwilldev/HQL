@@ -89,3 +89,7 @@ luamod: $(OBJS) lua_api.o ../vendor/libjson.a
 pymod: $(OBJS) python_api.o ../vendor/libjson.a
 	@echo "building python module: hql"
 	g++ $(DYLIB_CC_OPT) -o ../hql.so $^
+
+allmod:	$(OBJS) lua_api.o python_api.o ../vendor/libjson.a
+	@echo "building module: hql"
+	g++ $(DYLIB_CC_OPT) -o ../hql.so $^
