@@ -141,15 +141,239 @@ extern "C" {
         return _hql_clear_trollers<true>(self, args);
     }
 
+    static PyObject *HQL_hql2hql(PyObject *self, PyObject *args){
+        char *hql_str;
+        PyObject *result;
+        if (!PyArg_ParseTuple(args, "s", &hql_str)) {
+            result = Py_False;
+            Py_INCREF(result);
+            return result;
+        }
+        HQLNode *node = ASTUtil::parser_hql(hql_str);
+        if(node){
+            string hql = node->to_hql();
+            delete node;
+            return Py_BuildValue("s", hql.c_str());
+        }else{
+            result = Py_False;
+            Py_INCREF(result);
+        }
+        return result;
+    }
+
+
+    static PyObject *HQL_hql2cachekey(PyObject *self, PyObject *args){
+        int do_result_reduce = 1;
+        char *hql_str;
+        PyObject *result;
+
+        if (!PyArg_ParseTuple(args, "s|i", &hql_str, &do_result_reduce)) {
+            result = Py_False;
+            Py_INCREF(result);
+            return result;
+        }
+        HQLNode *node = ASTUtil::parser_hql(hql_str);
+        if(node){
+            uint8_t type_id = TypeConfig::type_id(node->get_etype());
+            string hql = "LIST[" + num2str((uint8_t)type_id) + "]" + node->cache_key(do_result_reduce!=0);
+            delete node;
+            return Py_BuildValue("s", hql.c_str());
+        }else{
+            result = Py_False;
+        }
+        Py_INCREF(result);
+        return result;
+    }
+
+    static PyObject *HQL_all_trollers(PyObject *self, PyObject *args){
+        int i = -1;
+        PyObject* result = PyDict_New();
+        PyArg_ParseTuple(args, "|i", &i);
+        uint8_t ns = i<0 ? TrollersHolder::cur_ns_num : (uint8_t)i;
+
+        const map<string, list<HQLNode*> >& trs = TrollersHolder::get_trollers(ns);
+        map<string, list<HQLNode*> >::const_iterator it;
+        for(it=trs.begin(); it != trs.end(); it++){
+            PyObject *key = Py_BuildValue("s", it->first.c_str());
+            PyObject *value = PyList_New(it->second.size());
+            list<HQLNode*>::const_iterator sit = it->second.begin();
+            int i=0;
+            for(; sit != it->second.end(); sit++){
+                PyList_SetItem(value, i, Py_BuildValue("s",(*sit)->to_hql().c_str()));
+                i++;
+            }
+            PyDict_SetItem(result, key, value);
+        }
+        return result;
+    }
+
+    static PyObject *HQL_hql_info(PyObject *self, PyObject *args){
+        char *hql_str;
+        PyObject *result = PyDict_New();
+        if (!PyArg_ParseTuple(args, "s", &hql_str)) {
+            return result;
+        }
+        string m = hql_str;
+
+        if(m.size()<8) return result; //LIST[n]L[num,[HQL]]
+        if(m.substr(0,5)=="LIST["){ // a cache-key
+
+            do{// TIME_IN info
+                string::size_type tip = m.find(",TIME_IN,");
+                if(tip == string::npos) break;
+                string part_l = m.substr(0, tip);
+                string part_r = m.substr(tip+9);
+                tip = part_l.find_last_of('.');
+                if(tip == string::npos) break;
+                part_l = part_l.substr(tip+1);
+
+                PyDict_SetItem(
+                    result,
+                    Py_BuildValue("s", "time_in_key"), //key
+                    Py_BuildValue("s", part_l.c_str()) //value
+                );
+
+                PyDict_SetItem(
+                    result,
+                    Py_BuildValue("s", "time_in_seconds"), //key
+                    Py_BuildValue("l", atol(part_r.c_str())) //value
+                );
+            }while(0);
+
+            string::size_type tmp = m.find_first_of(']');
+            if(tmp==string::npos) goto end;
+            m = m.substr(tmp+1);
+            if(m[0]=='O' && m[1]=='['){
+                m = m.substr(2);
+                string::size_type p = m.find_first_of(",");
+                PyDict_SetItem(
+                    result,
+                    Py_BuildValue("s", "order_key"), //key
+                    Py_BuildValue("s", m.substr(0,p).c_str()) //value
+                );
+
+                m = m.substr(p+1);
+                PyDict_SetItem(
+                    result,
+                    Py_BuildValue("s", "order_asc"), //key
+                    (m[0]=='A' ? Py_True : Py_False) //value
+                );
+            }
+            tmp = m.find_last_of(']');
+            m = m.substr(tmp+1);
+            if(m[0]=='L'){
+                PyDict_SetItem(
+                    result,
+                    Py_BuildValue("s", "limit"), //key
+                    Py_BuildValue("l", atol(m.c_str()+1)) //value
+                );
+            }
+        }else{ // a hql
+            HQLNode *n = ASTUtil::parser_hql(m);
+            HQLNode *old_n = n;
+            if(n){
+                pair<string, uint64_t> ret = n->time_in();
+                if(ret.first.size()>0){
+                    PyDict_SetItem(
+                        result,
+                        Py_BuildValue("s", "time_in_key"), //key
+                        Py_BuildValue("s", ret.first.c_str()) //value
+                    );
+
+                    PyDict_SetItem(
+                        result,
+                        Py_BuildValue("s", "time_in_seconds"), //key
+                        Py_BuildValue("l", ret.second) //value
+                    );
+                }
+                if(n->get_type() == HQLNode::MISC && n->get_subtype()== HQLNode::LIMIT){
+                    PyDict_SetItem(
+                        result,
+                        Py_BuildValue("s", "limit"), //key
+                        Py_BuildValue("l", atol(n->get_operand(1).as_str()->c_str())) //value
+                    );
+                    printf("!!!!limit = %s \n",n->get_operand(1).as_str()->c_str());
+
+                    n = n->get_operand(0).as_node().get();
+                }
+                if(n->get_type() == HQLNode::MISC && n->get_subtype()== HQLNode::ORDER_BY){
+                    PyDict_SetItem(
+                        result,
+                        Py_BuildValue("s", "order_key"), //key
+                        Py_BuildValue("s", n->get_operand(1).as_str()->c_str()) //value
+                    );
+
+                    PyDict_SetItem(
+                        result,
+                        Py_BuildValue("s", "order_asc"), //key
+                        (n->get_operand(1).as_num()==0 ? Py_True : Py_False) //value
+                    );
+                }
+                delete old_n;
+            }
+        }
+    end:
+        return result;
+    }
+
+    static PyObject *HQL_extmd_info(PyObject *self, PyObject *args){
+        int i = -1;
+        PyObject* result = PyDict_New();
+        PyArg_ParseTuple(args, "|i", &i);
+        uint8_t ns = i<0 ? TrollersHolder::cur_ns_num : (uint8_t)i;
+
+        const map<string, ExtraMatchDataInfo>& extmd = TrollersHolder::get_extmd_info(ns);
+        map<string, ExtraMatchDataInfo>::const_iterator it;
+
+        for(it =  extmd.begin(); it != extmd.end(); it++){
+            PyObject *key = Py_BuildValue("s", it->first.c_str());
+            PyObject *value = PyDict_New();
+            PyObject *key_0 = Py_BuildValue("s", "keys");
+            PyObject *value_0 = PyList_New(it->second.keys.size());
+            set<string>::iterator sit = it->second.keys.begin();
+            int i=0;
+            for(; sit != it->second.keys.end(); sit++){
+                PyList_SetItem(
+                    value_0, i,
+                    Py_BuildValue("s", sit->c_str())
+                );
+                i++;
+            }
+            PyDict_SetItem(value, key_0, value_0);
+            PyDict_SetItem(
+                value,
+                Py_BuildValue("s", "relation_info"),
+                Py_BuildValue("l", it->second.relation_info)
+            );
+
+            PyDict_SetItem(result, key, value);
+        }
+        return result;
+    }
+
+
     static PyMethodDef HQLMethods[] = {
         {"setup_config", HQL_setup_config, METH_VARARGS, "setup HQL config."},
         {"use_namespace", HQL_use_namespace, METH_VARARGS, "change/get current namespace."},
         {"register_troller", (PyCFunction)HQL_register_troller, METH_VARARGS|METH_KEYWORDS, "register hql."},
+        {"register_hql", (PyCFunction)HQL_register_troller, METH_VARARGS|METH_KEYWORDS, "register hql."}, //alias
         {"xregister_troller", (PyCFunction)HQL_xregister_troller, METH_VARARGS|METH_KEYWORDS, "register hql(xpc version)."},
+        {"xregister_hql", (PyCFunction)HQL_xregister_troller, METH_VARARGS|METH_KEYWORDS, "register hql(xpc version)."}, //alias
         {"unregister_troller", (PyCFunction)HQL_unregister_troller, METH_VARARGS|METH_KEYWORDS, "unregister hql."},
+        {"unregister_hql", (PyCFunction)HQL_unregister_troller, METH_VARARGS|METH_KEYWORDS, "unregister hql."}, //alias
         {"xunregister_troller", (PyCFunction)HQL_xunregister_troller, METH_VARARGS|METH_KEYWORDS, "unregister hql(xpc version)."},
+        {"xunregister_hql", (PyCFunction)HQL_xunregister_troller, METH_VARARGS|METH_KEYWORDS, "unregister hql(xpc version)."}, //alias
         {"clear_trollers", (PyCFunction)HQL_clear_trollers, METH_VARARGS, "clear all hql in namespace."},
+        {"clear_hql", (PyCFunction)HQL_clear_trollers, METH_VARARGS, "clear all hql in namespace."}, //alias
         {"xclear_trollers", (PyCFunction)HQL_xclear_trollers, METH_VARARGS, "clear all hql in namespace (xpc version)."},
+        {"xclear_hql", (PyCFunction)HQL_xclear_trollers, METH_VARARGS, "clear all hql in namespace (xpc version)."}, //alias
+        {"trollers", (PyCFunction)HQL_all_trollers, METH_VARARGS, "list all hql in namespace."},
+        {"all_hql", (PyCFunction)HQL_all_trollers, METH_VARARGS, "list all hql in namespace."}, //alias
+        {"hql2hql", (PyCFunction)HQL_hql2hql, METH_VARARGS, "format given hql."},
+        {"format_hql", (PyCFunction)HQL_hql2hql, METH_VARARGS, "format given hql."}, //alias
+        {"hql2cachekey", (PyCFunction)HQL_hql2cachekey, METH_VARARGS, "get cachekey of hql."}, //alias
+        {"hql_info", (PyCFunction)HQL_hql_info, METH_VARARGS, "get info of hql."},
+        {"extmd_info", (PyCFunction)HQL_extmd_info, METH_VARARGS, "get ext match data info of namespace."},
         {NULL, NULL, 0, NULL}        /* Sentinel */
     };
 

@@ -172,6 +172,35 @@ extern "C" {
         return _hql_clear_trollers<true>(L);
     }
 
+    static int HQL_all_trollers(lua_State *L){
+        uint8_t ns = 0;
+        if(lua_gettop(L) == 1){
+            ns = static_cast<uint8_t>(lua_tonumber(L, -1));
+            lua_pop(L, 1);
+        }else{
+            ns =TrollersHolder::cur_ns_num;
+        }
+
+        const map<string, list<HQLNode*> >& trs = TrollersHolder::get_trollers(ns);
+
+        lua_newtable(L);
+        map<string, list<HQLNode*> >::const_iterator it;
+        for(it=trs.begin(); it != trs.end(); it++){
+            lua_pushstring(L, it->first.c_str());
+            lua_newtable(L);
+            list<HQLNode*>::const_iterator sit = it->second.begin();
+            int i=0;
+            for(; sit != it->second.end(); sit++){
+                lua_pushnumber(L, i+1);
+                lua_pushstring(L, (*sit)->to_hql().c_str());
+                lua_settable(L, -3);
+                i++;
+            }
+            lua_settable(L, -3);
+        }
+        return 1;
+    }
+
     static int HQL_hql2hql(lua_State *L) {
         if(!lua_isstring(L, -1)){
             lua_pop(L, 1);
@@ -214,36 +243,6 @@ extern "C" {
         }
         return 1;
     }
-
-    static int HQL_all_trollers(lua_State *L){
-        uint8_t ns = 0;
-        if(lua_gettop(L) == 1){
-            ns = static_cast<uint8_t>(lua_tonumber(L, -1));
-            lua_pop(L, 1);
-        }else{
-            ns =TrollersHolder::cur_ns_num;
-        }
-
-        const map<string, list<HQLNode*> >& trs = TrollersHolder::get_trollers(ns);
-
-        lua_newtable(L);
-        map<string, list<HQLNode*> >::const_iterator it;
-        for(it=trs.begin(); it != trs.end(); it++){
-            lua_pushstring(L, it->first.c_str());
-            lua_newtable(L);
-            list<HQLNode*>::const_iterator sit = it->second.begin();
-            int i=0;
-            for(; sit != it->second.end(); sit++){
-                lua_pushnumber(L, i+1);
-                lua_pushstring(L, (*sit)->to_hql().c_str());
-                lua_settable(L, -3);
-                i++;
-            }
-            lua_settable(L, -3);
-        }
-        return 1;
-    }
-
 
     static int HQL_hql_info(lua_State *L){
         string m;
@@ -298,6 +297,7 @@ extern "C" {
             }
         }else{ // a hql
             HQLNode *n = ASTUtil::parser_hql(m);
+            HQLNode *old_n = n;
             if(n){
                 pair<string, uint64_t> ret = n->time_in();
                 if(ret.first.size()>0){
@@ -324,7 +324,7 @@ extern "C" {
                     lua_pushboolean(L, n->get_operand(1).as_num()==0);
                     lua_settable(L, -3);
                 }
-                delete n;
+                delete old_n;
             }
         }
     end:
@@ -416,14 +416,21 @@ extern "C" {
         {"setup_config", HQL_setup_config},
         {"use_namespace", HQL_use_namespace}, // non-arg for current namespace
         {"register_troller", HQL_register_troller}, // ns
+        {"register_hql", HQL_register_troller}, // alias
         {"xregister_troller", HQL_xregister_troller}, // ns
+        {"xregister_hql", HQL_xregister_troller}, // alias
         {"unregister_troller", HQL_unregister_troller}, // ns
+        {"unregister_hql", HQL_unregister_troller}, // alias
         {"xunregister_troller", HQL_xunregister_troller}, // ns
+        {"xunregister_hql", HQL_xunregister_troller}, // alias
         {"clear_trollers", HQL_clear_trollers}, // ns
+        {"clear_hql", HQL_clear_trollers}, // alias
         {"xclear_trollers", HQL_xclear_trollers}, // ns
+        {"xclear_hql", HQL_xclear_trollers}, // alias
         {"trollers", HQL_all_trollers}, // ns
+        {"all_hql", HQL_all_trollers}, // alias
         {"hql2hql", HQL_hql2hql},
-        {"format_hql", HQL_hql2hql},
+        {"format_hql", HQL_hql2hql}, //alias
         {"hql2cachekey", HQL_hql2cachekey},
         {"hql_info", HQL_hql_info},
         {"extmd_info", HQL_extmd_info}, //ns
