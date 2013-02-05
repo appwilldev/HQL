@@ -26,6 +26,79 @@ using std::ifstream;
 
 static PyObject *HQLError;
 
+
+/*
+ * Util Functions
+ */
+
+static void _hql_dict2json(PyObject *dict, JSONNode &n);
+static void _hql_flatobj2json(const string key, PyObject* value, JSONNode &n) {
+    if(value == Py_None){
+        JSONNode sub_node(JSON_NULL);
+        sub_node.set_name(key);
+        n.push_back(sub_node);
+    }else if(PyBool_Check(value)){
+        n.push_back(JSONNode(key, value == Py_True));
+    }else if(PyInt_Check(value)){
+        n.push_back(JSONNode(key, PyInt_AS_LONG(value)));
+    }else if(PyLong_Check(value)){
+        n.push_back(JSONNode(key, PyLong_AsLong(value)));
+    }else if(PyFloat_Check(value)){
+        n.push_back(JSONNode(key, PyFloat_AsDouble(value)));
+    }else if(PyString_Check(value)){
+        n.push_back(JSONNode(key, PyString_AS_STRING(value)));
+    }else if(PyUnicode_Check(value)){
+        n.push_back(JSONNode(key, PyUnicode_AS_DATA(value)));
+    }else if(PyTuple_Check(value) || PyList_Check(value)){
+        JSONNode sub_node(JSON_ARRAY);
+        sub_node.set_name(key);
+        _hql_dict2json(value, sub_node);
+        n.push_back(sub_node);
+    }else if(PyDict_Check(value)){
+        JSONNode sub_node(JSON_NODE);
+        sub_node.set_name(key);
+        _hql_dict2json(value, sub_node);
+        n.push_back(sub_node);
+    }
+}
+
+static void _hql_dict2json(PyObject *dict, JSONNode &n) {
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+
+    if(PyTuple_Check(dict)){
+        for(int i=0; i<PyTuple_Size(dict); i++){
+            value = PyTuple_GetItem(dict, i);
+            _hql_flatobj2json("", value, n);
+        }
+    }else if(PyList_Check(dict)){
+        for(int i=0; i<PyList_Size(dict); i++){
+            value = PyList_GetItem(dict, i);
+            _hql_flatobj2json("", value, n);
+        }
+    }else if(PyDict_Check(dict)){
+        while (PyDict_Next(dict, &pos, &key, &value)) {
+            const string skey = PyString_AS_STRING(key);
+            _hql_flatobj2json(skey, value, n);
+        }
+    }
+}
+
+static JSONNode hql_dict2json(PyObject *dict) {
+    JSONNode ret;
+
+    if(PyDict_Check(dict)){
+        _hql_dict2json(dict, ret);
+    }
+
+#ifdef DEBUG
+    std::cerr<< "<DEBUG>  LuaTable2JSON JSON=: "  << ret.write() << std::endl;
+#endif
+
+    return ret;
+}
+
+
 template<void(_F)(HQLNode*, uint8_t, bool), bool _xpc>
 static PyObject *_hql_ctl_troller(PyObject *self, PyObject *args, PyObject *kw){
     uint8_t ns = 0;
@@ -352,6 +425,39 @@ extern "C" {
     }
 
 
+
+    static PyObject *HQL_xmatch(PyObject *self, PyObject *args){
+
+        int i = -1;
+        PyObject *obj, *extdb;
+        PyObject *result = PyDict_New();
+        if(!PyArg_ParseTuple(args, "OO|i", &obj, &extdb, &i)){
+            return result;
+        }
+        uint8_t ns = i<0 ? TrollersHolder::cur_ns_num : (uint8_t)i;
+
+        map<uint64_t, set<string> > ret;
+        JSONNode extmd = hql_dict2json(extdb);
+        JSONModelGetter getter(&extmd);
+
+        JSONNode n = hql_dict2json(obj);
+        ret = TrollersHolder::xmatch(n, &getter, ns);
+
+        map<uint64_t, set<string> >::iterator it;
+        for(it=ret.begin(); it != ret.end(); it++){
+            PyObject *fn = Py_BuildValue("l", it->first);
+            PyObject *va = PyList_New(it->second.size());
+            set<string>::iterator sit = it->second.begin();
+            int i=0;
+            for(; sit != it->second.end(); sit++){
+                PyList_SetItem(va, i, Py_BuildValue("s",sit->c_str()));
+                i++;
+            }
+            PyDict_SetItem(result, fn, va);
+        }
+        return result;
+    }
+
     static PyMethodDef HQLMethods[] = {
         {"setup_config", HQL_setup_config, METH_VARARGS, "setup HQL config."},
         {"use_namespace", HQL_use_namespace, METH_VARARGS, "change/get current namespace."},
@@ -374,6 +480,7 @@ extern "C" {
         {"hql2cachekey", (PyCFunction)HQL_hql2cachekey, METH_VARARGS, "get cachekey of hql."}, //alias
         {"hql_info", (PyCFunction)HQL_hql_info, METH_VARARGS, "get info of hql."},
         {"extmd_info", (PyCFunction)HQL_extmd_info, METH_VARARGS, "get ext match data info of namespace."},
+        {"xmatch", (PyCFunction)HQL_xmatch, METH_VARARGS, "XMATCH!"},
         {NULL, NULL, 0, NULL}        /* Sentinel */
     };
 
