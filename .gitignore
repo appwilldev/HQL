@@ -1,6 +1,7 @@
 *.o
 *.a
 *.so
+*.pyc
 a.out
 parser
 parser.output
