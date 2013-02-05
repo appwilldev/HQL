@@ -62,7 +62,7 @@ ast_slfk.o: ast.hpp concrete_ast.hpp ast_slfk.cpp model.hpp
 ast_rl.o: ast.hpp concrete_ast.hpp ast_rl.cpp model.hpp
 ast_logic.o: ast.hpp ast_util.hpp concrete_ast.hpp model.hpp ast_logic.cpp
 ast_misc.o: cmn_util.hpp ast.hpp concrete_ast.hpp model.hpp ast_misc.cpp
-ast_util.o: ast.hpp ast_util.hpp ast_util.cpp
+ast_util.o: cmn_util.hpp ast.hpp ast_util.hpp ast_util.cpp
 trollers.o: cmn_util.hpp ast_util.hpp ast.hpp type_config.hpp trollers.hpp model.hpp trollers.cpp
 hql_xpc.o: ast_util.hpp trollers.hpp hql_xpc.hpp hql_xpc.cpp
 cmd.o: cmd.hpp cmd.cpp

@@ -6,6 +6,7 @@
  */
 
 #include "ast_util.hpp"
+#include "cmn_util.hpp"
 #include "ast.hpp"
 #include "concrete_ast.hpp"
 #include "cmd.hpp"
@@ -61,7 +62,40 @@ vector<uint64_t> ASTUtil::get_relations(const string &fn, ModelGetter *model_get
 {
 
     if(model_getter){
-       return  model_getter->operator()(fn);
+        return  model_getter->operator()(fn);
     }
     return vector<uint64_t>();
+}
+
+
+const JSONNode JSONModelGetter::operator()(uint64_t fn){
+    JSONNode::const_iterator it = data->find(num2str(fn));
+    if(it!=data->end()) {
+        return *it;
+    }
+    return JSONNode();
+}
+
+const vector<uint64_t> JSONModelGetter::operator()(const string &rel_key){
+    vector<uint64_t> ret;
+    JSONNode::const_iterator it = data->find(rel_key);
+    if(it==data->end()){//||it->type()!=JSON_ARRAY) {
+        return ret;
+    }
+    JSONNode fns_node = it->as_array();
+    if(fns_node.size()>0){
+        JSONNode::const_iterator stit = fns_node.begin();
+        while(stit!=fns_node.end()){
+            uint64_t fn = 0UL;
+            if(stit->type()==JSON_NUMBER){
+                fn =  stit->as_int();
+            }else if(it->type()==JSON_STRING){
+                string fs = it->as_string();
+                fn = strtoul(fs.c_str(), NULL, 10);
+            }
+            ret.push_back(fn);
+            ++stit;
+        }
+    }
+    return ret;
 }

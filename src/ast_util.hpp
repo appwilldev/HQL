@@ -38,6 +38,26 @@ public:
     virtual ~ModelGetter(){};
 };
 
+/*
+ * JSONModelGetter
+ *
+ */
+
+class JSONModelGetter : public ModelGetter
+{
+public:
+    JSONModelGetter(const JSONNode *_data):
+        data(_data)
+    {};
+
+    const JSONNode operator()(uint64_t fn);
+    const vector<uint64_t> operator()(const string &rel_key);
+
+private:
+    const JSONNode *data;
+};
+
+
 
 // HQLNodeConstMemFunCaller: call HQLNode const member function from HQLNode*/HQLOperands
 template<typename N, typename R, R(HQLNode::*F)() const>
