@@ -76,8 +76,8 @@ static JSONNode hql_table2json(lua_State *L, int index) {
 }
 
 
-template<bool xpc>
-static int _hql_register_troller(lua_State *L) {
+template<void(_F)(HQLNode*, uint8_t, bool), bool xpc>
+static int _hql_ctl_troller(lua_State *L) {
     uint8_t ns = 0;
     if(lua_gettop(L) == 2){
         ns = static_cast<uint8_t>(lua_tonumber(L, -1));
@@ -94,35 +94,7 @@ static int _hql_register_troller(lua_State *L) {
     HQLNode *n = ASTUtil::parser_hql(lua_tostring(L, -1));
     lua_pop(L, 1);
     if(n){
-        TrollersHolder::register_troller(n, ns, xpc);
-        delete n;
-        lua_pushboolean(L, 1);
-    }else{
-        lua_pushboolean(L, 0);
-    }
-    return 1;
-}
-
-template<bool xpc>
-static int _hql_unregister_troller(lua_State *L) {
-    uint8_t ns = 0;
-    if(lua_gettop(L) == 2){
-        ns = static_cast<uint8_t>(lua_tonumber(L, -1));
-        lua_pop(L, 1);
-    }else{
-        ns = TrollersHolder::cur_ns_num;
-    }
-
-    if(!lua_isstring(L, -1)){
-        lua_pop(L, 1);
-        lua_pushboolean(L, 0);
-        return 1;
-    }
-
-    HQLNode *n = ASTUtil::parser_hql(lua_tostring(L, -1));
-    lua_pop(L, 1);
-    if(n){
-        TrollersHolder::unregister_troller(n, ns, xpc);
+        _F(n, ns, xpc);
         delete n;
         lua_pushboolean(L, 1);
     }else{
@@ -177,19 +149,19 @@ extern "C" {
     }
 
     static int HQL_register_troller(lua_State *L) {
-        return _hql_register_troller<false>(L);
+        return _hql_ctl_troller<TrollersHolder::register_troller, false>(L);
     }
 
     static int HQL_xregister_troller(lua_State *L) {
-        return _hql_register_troller<true>(L);
+        return _hql_ctl_troller<TrollersHolder::register_troller, true>(L);
     }
 
     static int HQL_unregister_troller(lua_State *L) {
-        return _hql_unregister_troller<false>(L);
+        return _hql_ctl_troller<TrollersHolder::unregister_troller, false>(L);
     }
 
     static int HQL_xunregister_troller(lua_State *L) {
-        return _hql_unregister_troller<true>(L);
+        return _hql_ctl_troller<TrollersHolder::unregister_troller, true>(L);
     }
 
     static int HQL_clear_trollers(lua_State *L) {
