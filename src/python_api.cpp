@@ -252,7 +252,7 @@ extern "C" {
             delete node;
             return Py_BuildValue("s", hql.c_str());
         }else{
-            result = Py_False;
+            result = Py_None;
         }
         Py_INCREF(result);
         return result;
@@ -272,16 +272,21 @@ extern "C" {
             list<HQLNode*>::const_iterator sit = it->second.begin();
             int i=0;
             for(; sit != it->second.end(); sit++){
-                PyList_SetItem(value, i, Py_BuildValue("s",(*sit)->to_hql().c_str()));
+                PyObject *v0 = Py_BuildValue("s",(*sit)->to_hql().c_str());
+                PyList_SetItem(value, i, v0);
+                Py_DECREF(v0);
                 i++;
             }
             PyDict_SetItem(result, key, value);
+            Py_DECREF(key);
+            Py_DECREF(value);
         }
         return result;
     }
 
     static PyObject *HQL_hql_info(PyObject *self, PyObject *args){
         char *hql_str;
+        PyObject *key, *value;
         PyObject *result = PyDict_New();
         if (!PyArg_ParseTuple(args, "s", &hql_str)) {
             return result;
@@ -300,17 +305,17 @@ extern "C" {
                 if(tip == string::npos) break;
                 part_l = part_l.substr(tip+1);
 
-                PyDict_SetItem(
-                    result,
-                    Py_BuildValue("s", "time_in_key"), //key
-                    Py_BuildValue("s", part_l.c_str()) //value
-                );
+                key = Py_BuildValue("s", "time_in_key"); //key
+                value = Py_BuildValue("s", part_l.c_str()); //value
+                PyDict_SetItem(result, key, value);
+                Py_DECREF(key);
+                Py_DECREF(value);
 
-                PyDict_SetItem(
-                    result,
-                    Py_BuildValue("s", "time_in_seconds"), //key
-                    Py_BuildValue("l", atol(part_r.c_str())) //value
-                );
+                key = Py_BuildValue("s", "time_in_seconds"); //key
+                value = Py_BuildValue("l", atol(part_r.c_str())); //value
+                PyDict_SetItem(result, key, value);
+                Py_DECREF(key);
+                Py_DECREF(value);
             }while(0);
 
             string::size_type tmp = m.find_first_of(']');
@@ -319,27 +324,26 @@ extern "C" {
             if(m[0]=='O' && m[1]=='['){
                 m = m.substr(2);
                 string::size_type p = m.find_first_of(",");
-                PyDict_SetItem(
-                    result,
-                    Py_BuildValue("s", "order_key"), //key
-                    Py_BuildValue("s", m.substr(0,p).c_str()) //value
-                );
+                key = Py_BuildValue("s", "order_key"); //key
+                value = Py_BuildValue("s", m.substr(0,p).c_str()); //value
+                PyDict_SetItem(result, key, value);
+                Py_DECREF(key);
+                Py_DECREF(value);
 
                 m = m.substr(p+1);
-                PyDict_SetItem(
-                    result,
-                    Py_BuildValue("s", "order_asc"), //key
-                    (m[0]=='A' ? Py_True : Py_False) //value
-                );
+                key = Py_BuildValue("s", "order_asc"); //key
+                value = (m[0]=='A' ? Py_True : Py_False); //value
+                PyDict_SetItem(result, key, value);
+                Py_DECREF(key);
             }
             tmp = m.find_last_of(']');
             m = m.substr(tmp+1);
             if(m[0]=='L'){
-                PyDict_SetItem(
-                    result,
-                    Py_BuildValue("s", "limit"), //key
-                    Py_BuildValue("l", atol(m.c_str()+1)) //value
-                );
+                key = Py_BuildValue("s", "limit"); //key
+                value = Py_BuildValue("l", atol(m.c_str()+1)); //value
+                PyDict_SetItem(result, key, value);
+                Py_DECREF(key);
+                Py_DECREF(value);
             }
         }else{ // a hql
             HQLNode *n = ASTUtil::parser_hql(m);
@@ -347,40 +351,41 @@ extern "C" {
             if(n){
                 pair<string, uint64_t> ret = n->time_in();
                 if(ret.first.size()>0){
-                    PyDict_SetItem(
-                        result,
-                        Py_BuildValue("s", "time_in_key"), //key
-                        Py_BuildValue("s", ret.first.c_str()) //value
-                    );
+                    key = Py_BuildValue("s", "time_in_key"); //key
+                    value = Py_BuildValue("s", ret.first.c_str()); //value
+                    PyDict_SetItem(result, key, value);
+                    Py_DECREF(key);
+                    Py_DECREF(value);
 
-                    PyDict_SetItem(
-                        result,
-                        Py_BuildValue("s", "time_in_seconds"), //key
-                        Py_BuildValue("l", ret.second) //value
-                    );
+                    key = Py_BuildValue("s", "time_in_seconds"); //key
+                    value = Py_BuildValue("l", ret.second); //value
+                    PyDict_SetItem(result, key, value);
+                    Py_DECREF(key);
+                    Py_DECREF(value);
                 }
                 if(n->get_type() == HQLNode::MISC && n->get_subtype()== HQLNode::LIMIT){
-                    PyDict_SetItem(
-                        result,
-                        Py_BuildValue("s", "limit"), //key
-                        Py_BuildValue("l", atol(n->get_operand(1).as_str()->c_str())) //value
-                    );
-                    printf("!!!!limit = %s \n",n->get_operand(1).as_str()->c_str());
+                    key = Py_BuildValue("s", "limit"); //key
+                    value = Py_BuildValue("l", atol(n->get_operand(1).as_str()->c_str())); //value
+                    PyDict_SetItem(result, key, value);
+                    Py_DECREF(key);
+                    Py_DECREF(value);
 
                     n = n->get_operand(0).as_node().get();
                 }
                 if(n->get_type() == HQLNode::MISC && n->get_subtype()== HQLNode::ORDER_BY){
-                    PyDict_SetItem(
-                        result,
-                        Py_BuildValue("s", "order_key"), //key
-                        Py_BuildValue("s", n->get_operand(1).as_str()->c_str()) //value
-                    );
+                    key = Py_BuildValue("s", "order_key"); //key
+                    value = Py_BuildValue("s", n->get_operand(1).as_str()->c_str()); //value
+                    PyDict_SetItem(result, key, value);
+                    Py_DECREF(key);
+                    Py_DECREF(value);
 
+                    key = Py_BuildValue("s", "order_asc"); //key
                     PyDict_SetItem(
                         result,
-                        Py_BuildValue("s", "order_asc"), //key
+                        key,
                         (n->get_operand(1).as_num()==0 ? Py_True : Py_False) //value
                     );
+                    Py_DECREF(key);
                 }
                 delete old_n;
             }
@@ -406,20 +411,23 @@ extern "C" {
             set<string>::iterator sit = it->second.keys.begin();
             int i=0;
             for(; sit != it->second.keys.end(); sit++){
-                PyList_SetItem(
-                    value_0, i,
-                    Py_BuildValue("s", sit->c_str())
-                );
+                PyObject *attr = Py_BuildValue("s", sit->c_str());
+                PyList_SetItem(value_0, i, attr);
+                Py_DECREF(attr);
                 i++;
             }
             PyDict_SetItem(value, key_0, value_0);
-            PyDict_SetItem(
-                value,
-                Py_BuildValue("s", "relation_info"),
-                Py_BuildValue("l", it->second.relation_info)
-            );
+            Py_DECREF(key_0);
+            Py_DECREF(value_0);
+            PyObject *rk = Py_BuildValue("s", "relation_info");
+            PyObject *rv = Py_BuildValue("l", it->second.relation_info);
+            PyDict_SetItem(value, rk, rv);
+            Py_DECREF(rk);
+            Py_DECREF(rv);
 
             PyDict_SetItem(result, key, value);
+            Py_DECREF(key);
+            Py_DECREF(value);
         }
         return result;
     }
@@ -450,10 +458,14 @@ extern "C" {
             set<string>::iterator sit = it->second.begin();
             int i=0;
             for(; sit != it->second.end(); sit++){
-                PyList_SetItem(va, i, Py_BuildValue("s",sit->c_str()));
+                PyObject *lck = Py_BuildValue("s",sit->c_str());
+                PyList_SetItem(va, i, lck);
+                Py_DECREF(lck);
                 i++;
             }
             PyDict_SetItem(result, fn, va);
+            Py_DECREF(fn);
+            Py_DECREF(va);
         }
         return result;
     }
