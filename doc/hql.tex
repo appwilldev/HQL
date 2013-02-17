@@ -1,0 +1,298 @@
+% -*- mode: latex -*-
+
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{CJKutf8}
+\usepackage[usenames]{color}
+\usepackage[unicode,bookmarksnumbered, pdfencoding=auto]{hyperref}
+\usepackage{verbatim}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{titletoc}
+\usepackage{tikz}
+\usepackage{txfonts}
+\usepackage[T1]{fontenc}
+\usepackage{titlesec}
+
+\usepackage{framed}
+%\usepackage{indentfirst}
+
+\renewcommand{\contentsname}{目录}
+\renewcommand{\tablename}{表}
+
+%\usepackage[CJKchecksingle,CJKnumber]{xeCJK}
+
+%\setCJKsansfont{SimHei}
+
+\author{KDr2}
+\title{HQL详解}
+\pagestyle{headings}
+
+\begin{document}
+\begin{CJK}{UTF8}{gbsn}
+
+  \maketitle{}
+  \begin{abstract}
+    HQL语法语义，实现，编程接口，以及应用。
+  \end{abstract}
+  \newpage
+
+  % \section*{目录}
+  \setcounter{tocdepth}{3}
+  \tableofcontents
+  \newpage
+  \section{HQL简介}
+  HQL最初用以代替Haddit V1中的LD, 每个HQL都可以描述一个或一类列表。
+  \section{常用名词}
+
+  \begin{itemize}
+  \item \texttt{etype} : 列表内元素的类型。
+  \item \texttt{EACH} : EACH 作为一个HQL关键词，可以被问号(?)代替，在做匹配时会被具体的实体或者值所替换，含有EACH的HQL描述的是一类列表，无EACH的HQL描述的是一个列表。
+  \item \texttt{host/host-type} : 见第\pageref{hql-host-guest}页 第\ref{hql-host-guest}节 SLFK 相关内容。
+  \item \texttt{guest/guest-type} : 见第\pageref{hql-host-guest}页 第\ref{hql-host-guest}节 SLFK 相关内容。
+  \item \texttt{fullname} : 一个64位的无符号整数，在haddit中每个实体都有一个唯一的fullname，HQL需要放入具体实体的位置可以用 \#fullname 代替， 比如 \texttt{\#258}。
+  \end{itemize}
+
+  % section-1
+  \section{HQL分类}
+  HQL可以分为以下几类：
+  \begin{table}[htbp]
+    \centering
+    \caption{HQL分类}
+    \begin{tabular}{p{30pt}p{100pt}}
+      \toprule
+      %\hline
+      Class & Subclass \\
+      \midrule
+      \multirow{2}{*}{SL} & SLAll \\
+      & SLCond \\
+      \cmidrule{2-2}
+      \multirow{2}{*}{SLFK} & SLFKAll \\
+      & SLFKCond \\
+      \cmidrule{2-2}
+      RL & RL \\
+      \cmidrule{2-2}
+      \multirow{3}{*}{Logic} & AND \\
+      & OR \\
+      & NOT \\
+      \cmidrule{2-2}
+      \multirow{2}{*}{Misc} & ORDER BY \\
+      & LIMIT \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+
+  \subsection{SL: Simple HQL}
+
+  \subsubsection{SLAll: Simple HQL without Condition}
+  写法:
+\begin{verbatim}
+    SELECT etype
+\end{verbatim}
+  用以描述某种类型的所有实体所构成的集合。比如，\emph{列表}
+\begin{verbatim}
+    SELECT user
+\end{verbatim}
+  表示所有的 \texttt{user} 所组成的列表。
+
+  \subsubsection{SLCond: Simple HQL with Condition}
+
+  写法：
+\begin{verbatim}
+    SELECT etype WHERE attr OPER value
+\end{verbatim}
+  用以描述某种类型中符合某条件的实体所组成的列表。\\
+  其中的 OPER 包括：
+  \begin{itemize}
+  \item \texttt{=, \textgreater, \textgreater=, \textless, \textless=}
+    \\
+    此时 value 可以是 true/false, 数字，"字符串(双引号)"。
+  \item \texttt{in} \\
+    此时 value 可以是 \textsf{[数字, ...], ["字符串", ...]}。
+  \item \texttt{contains by} \\
+    此时 value 可以是"字符串(双引号)", 条件语句写作：\\
+    \texttt{contains "str" by "sep"}。
+  \item \texttt{time\_in}\\
+    此时 value 可以是数字。
+  \end{itemize}
+
+  \subsection{SLFK: Simple HQL with ForeginKey}
+  SLFK用以描述某类实体的外键属性所指向的实体所组成的列表。
+
+  \subsubsection{SLFKAll: SLFK without Conditions}
+  写法：
+\begin{verbatim}
+    SELECT post.author_id AS user
+\end{verbatim}
+  用以描述所有某类型的实体的某外键属性所指向的实体所组成的列表。
+
+  \subsubsection{SLFKCond: SLFK with Conditions}
+  写法：
+\begin{verbatim}
+    SELECT post.author_id AS user WHERE num_comments > 300
+\end{verbatim}
+  用以描述符合某些条件的某类实体的外键属性所指向的实体所组成的列表。\\
+
+  {\noindent注意：}
+  \begin{quotation}
+    上面 \texttt{where num\_comments > 300} 是对 post 的过滤。
+  \end{quotation}
+  \label{hql-host-guest}以上HQL中 外键所附着的类型(post)称为 host/host-type, 外键所指向的类型(user)称为 guest/guest-type。
+
+  \subsection{RL: Relation HQL}
+  写法：
+\begin{verbatim}
+    (select [*]relation) between (select [*]left_type) and
+       (select [*]right_type)
+\end{verbatim}
+  用以根据实体间关系以及对关系和左右实体的条件过滤来提取其中的关系或者左实体或者右实体。\\
+
+  注意:
+  \begin{quote}
+    RL 写法可分解为 \texttt{SL between SL and SL};\\
+    通过在需要的实体类型名前面加 \emph{*} 来指明需要的提取的是哪一类(哪个位置的)实体。
+  \end{quote}
+
+  举例:
+\begin{verbatim}
+    select comment between select user and select *post
+    select *comment between select user and select post
+    select follow between select user and select *user
+    select follow between EACH and select *user where gender = "female"
+\end{verbatim}
+
+  如果 left 和 right 的位置是 SLAll 语句的话， 可以根据是否是目标位置来选用 @ 或 *@ 代替。\\
+
+  举例:
+\begin{verbatim}
+    select comment between @ and *@
+    select follow between @ and *@
+\end{verbatim}
+
+  \subsection{Logic HQL}
+  Logic HQL 是以上 SL/SLFK等的逻辑运算，包括 and/or/not，每种运算都会有一些限制。
+
+  \subsubsection{Logic AND HQL}
+  etype类型相同的多个SL 可以做 AND，运算结果可看作SL。\\
+
+  举例:
+\begin{verbatim}
+    select user where age > 18 and select user where gender="female"
+\end{verbatim}
+  SLFK 与 etype 是该 SLFK 的 host 或者 guest 类型的 SL 可以做 AND， 运算结果可看作 SLFK。\\
+
+  举例:
+\begin{verbatim}
+    select post.author\_id as user where num\_comment >100 and
+      select user where age > 18 and select post where board\_id =2
+\end{verbatim}
+  两个 etype 相同并且 relation type 相同并且该 relation 的 left 和 right 也相同的 RL 可以做 AND。\\
+
+  举例:
+\begin{verbatim}
+    select follow between EACH and *@ and select follow
+      between *@ and EACH
+\end{verbatim}
+
+  \subsubsection{Logic OR HQL}
+  etype 类型相同的不含 EACH 语句的多个 SL 可以做 OR，运算结果可看作 SL。\\
+
+  举例:
+\begin{verbatim}
+    select user where age > 18 or select user where
+      gender="female"
+\end{verbatim}
+
+  \subsubsection{Logic NOT HQL}
+  不含EACH语句的 SL 可以做 NOT， 运算结果可看作SL。\\
+
+  举例:
+\begin{verbatim}
+    not select user where age <18
+\end{verbatim}
+
+  \subsection{Misc HQL}
+
+  \subsubsection{Order By HQL}
+
+  将列表etype的某属性值排序，ORDER BY 后不可再做逻辑运算。\\
+
+  举例:
+
+\begin{verbatim}
+    select user where age <18 order by age
+    select user where age <18 order by age asc
+    select user where age <18 order by age desc
+\end{verbatim}
+  在SLFK中，可以用 order by host.attr\_name 来按照host类型的属性排序。
+
+  \subsubsection{Limit HQL}
+
+  将列表元素数目限制在某数值之内，LIMIT 后不可再做逻辑运算， 不可再 ORDER BY。\\
+
+  举例:
+
+\begin{verbatim}
+    select user where age <18 limit 100
+    select user where age <18 order by age limit 100
+    select user where age <18 order by age desc limit 100
+\end{verbatim}
+
+  \section{Category}
+
+  在做类型配置的时候，可以将几个类型归为一个category类型，category类型可以出现在 SL 及 SLFK(host/guest均可) 中。
+
+  \section{注意事项}
+  \subsection{SLFK注意事项}
+
+  SLFK 中的 guest(跟 etype 相同)实体是否属于某列表取决与其 host 实体(即便是你在 SLFK 上 AND 上了 etype 类型为 guest 的 SL)。
+  只有 host 实体在因为被创建或者修改而被拿去做列表匹配的时候，才会判断附属其上(其 fk 所指)的 guest 实体是否满足这个列表的条件。
+  只修改 guest 并不引发此 SLFK 对这个 guest 的重新匹配。
+  例如,
+\begin{verbatim}
+    select post.author_id as user and select user where age < 3
+\end{verbatim}
+  这个HQL试图选择 \emph{3岁以下发过 POST 的用户}, 用户 baby0 在他2岁的时候发了一帖，被加入了这个列表，
+  后来他3岁了(update 属性 age 到3)导致他重新做匹配， 但是这次重新匹配不会引发上面的 SLFK 重新匹配。
+
+  如果你想要强制此 SLFK 重新匹配，那你需要找到相应的 host 做个 update 来引发 host 的重新匹配，对于上面的 SLFK 还好，只要想办法 udpate 一个 baby0 的 post 就可以了， 但是很多场景根据 guest 去取 host 可能并不方便。
+
+  \subsection{RL注意事项}
+
+  对于某种关系，可以按这种关系在两个实体间可发生的次数划分为两类：单次关系和多次关系，分别描述如下：
+  \begin{itemize}
+  \item 单次关系比如用户关注用户这样的关系，要么关注要么不关注，不会有拉出去关注300次这样的情况；
+  \item 多次关系比如用户评论帖子这样的关系，可以评论到体无完肤摇摇欲坠还不为止。
+  \end{itemize}
+
+  Haddit(HQL) 对这两种关系都是允许且不加严格区分的，但是在描述列表的时候，则需要用户来加以区分并合理使用。单次关系的属性过滤可以放心用在 RL 中，比如
+\begin{verbatim}
+   (select follow where secret=true) between ? and *@
+\end{verbatim}
+  描述每个 user 私下 follow 的人， 由于这个follow只需一次，赖以判断的条件仅此一个，所以没有问题。
+
+  假设可以多次follow，而且这个多个follow的关键属性又不尽相同，就不好裁定了，就算按最后产生的关系来裁定，在这个关系被删除后依然出现麻烦。\\
+
+  \noindent由此，在写 RL HQL 中的尽量坚持 \\
+  \begin{center}
+    \fbox{
+      \parbox[c][][c]{280pt}{\begin{quote}
+          不按条件过滤处在 Relation 位置的多次关系类型
+        \end{quote}}
+    }\\
+  \end{center}
+  的原则。
+
+  \section{HQL约简}
+  \subsection{匹配前约简}
+  \subsection{匹配后约简}
+
+  \section{Programming API}
+  \subsection{Lua API}
+  \subsection{Python API}
+  \section{MultiProcess Mode}
+
+\newpage
+\end{CJK}
+\end{document}
+\newpage
