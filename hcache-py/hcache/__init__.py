@@ -3,8 +3,7 @@
 
 
 from hcache_hql import HQL
+from hcache_model import Model, Entity, Relation
+
 import hcache_utils as utils
-
-
-def setup_config(json):
-    return HQL.setup_config(json)
+import hcache_config as config
