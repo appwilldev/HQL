@@ -19,7 +19,7 @@ print(hql.hql2cachekey('select user where id > 100'));
 
 s='select user where tag contains ? by "," and select user where tag contains ? by ","  and select user where tag contains ? by "," limit 12'
 hql.register_troller(s)
-for i in range(99999):
+for i in range(2):
     print(hql.all_hql())
     print(hql.hql2cachekey(s))
     print(hql.hql2cachekey(s,True))

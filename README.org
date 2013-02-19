@@ -1,4 +1,4 @@
 #-*- mode: org; mode: auto-fill -*-
 
 * HQL
-
+  see doc/hql.tex
