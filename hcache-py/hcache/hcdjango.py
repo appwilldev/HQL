@@ -30,7 +30,8 @@ class HCManager(models.Manager):
         models.Manager.__init__(self)
 
     def get_list_by_hql(self, hql):
-        m = self.model #Model Class
+        mclz = self.model #Model Class
+        print mclz
 
 
 #----- methods for Model
@@ -41,9 +42,8 @@ def _method_init(self, *args, **kwargs):
 
 def _method_test_xmatch(self):
     m = self.hcmodel()
-    x = utils.extdata_collector(m, getter)
-    print "extmd: ", x
-    return HQL.xmatch(m.to_dict(), x)
+    extdata = utils.extdata_collector(m, getter)
+    return HQL.xmatch(m.to_dict(), extdata)
 
 def _method_save(self, force_insert=False, force_update=False, using=None):
     #TODO manage list and kv
@@ -96,17 +96,26 @@ def _method_hcmodel(self):
 
         return hcmodel.Relation(type_name, attrs, dirty_keys, left, right)
 
-def hccache_model(mclz):
-    TypeInfo.register_class(mclz.__name__.lower(), mclz)
-    mclz.__init__ = _method_init
-    mclz.save = _method_save
-    mclz.deleted = _method_delete
-    mclz.hcmodel = _method_hcmodel
-    mclz.test_xmatch = _method_test_xmatch
+class HCache(object):
 
-    for k, v in mclz.__dict__.iteritems():
-        if not isinstance(v, HQL): continue
-        v.register()
-    #endfor
+    def __init__(self, klcache = True, kvcache = False):
+        self._klcache = klcache
+        self._kvcache = kvcache
 
-    return mclz
+    def __call__(self, mclz):
+        mclz._hcache_kl = self._klcache
+        mclz._hcache_kv = self._kvcache
+        TypeInfo.register_class(mclz.__name__.lower(), mclz)
+
+        mclz.__init__ = _method_init
+        mclz.save = _method_save
+        mclz.deleted = _method_delete
+        mclz.hcmodel = _method_hcmodel
+        mclz.test_xmatch = _method_test_xmatch
+
+        for k, v in mclz.__dict__.iteritems():
+            if not isinstance(v, HQL): continue
+            v.register()
+        #endfor
+
+        return mclz

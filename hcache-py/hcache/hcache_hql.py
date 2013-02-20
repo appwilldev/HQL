@@ -2,6 +2,7 @@
 # author : KDr2
 
 import hql
+from hcache_model import Model
 
 class HQL(object):
 
@@ -30,6 +31,46 @@ class HQL(object):
             self._info = hql.hql_info(self._hql)
         #endif
         return self._info
+
+    def fmt(self, fmt, *args):
+        hql_str = self._hql
+        components = hql_str.split("EACH")
+        components_len = len(components)-1
+        if components_len!=len(fmt) or components_len!=len(args) or len(fmt)!=len(args):
+            return None
+        #endif
+
+        formated_args = []
+        idx = 0
+        for arg in args:
+            if isinstance(arg,Model): arg = arg.fullname
+            fmt_key = fmt[idx:idx+1]
+            if fmt_key=='s':
+                arg = unicode(arg).replace("\"", "\\\"")
+                formated_args.append('"' + arg + '"')
+            elif fmt_key=='d':
+                formated_args.append(str(arg))
+            elif fmt_key=='b':
+                if arg==True or (isinstance(arg, (str,unicode)) and arg.lower()=='true'):
+                    arg = "true"
+                else:
+                    arg = "false"
+                 #end
+                formated_args.append(arg)
+            elif fmt_key=='f':
+                formated_args.append("#" + str(arg))
+            else:
+                formated_args.append(str(arg))
+            #endif
+                idx = idx + 1
+        #endfor
+
+        idx = 0
+        for i in range(components_len, 0, -1):
+            components.insert(i, formated_args[components_len-idx-1])
+            idx = idx + 1
+        #endfor
+        return HQL("".join(components))
 
 
     @classmethod
