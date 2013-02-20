@@ -89,3 +89,5 @@ def setup(dct):
     setup_types(dct)
     import hcache_hql
     hcache_hql.HQL.setup_config(json.dumps(dct))
+    import hcache_capi
+    hcache_capi.setup(dct)

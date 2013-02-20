@@ -100,3 +100,7 @@ class HQL(object):
         if ns is None:
             return hql.xmatch(m, extdata)
         return hql.xmatch(m, extdata, ns)
+
+    @classmethod
+    def keyinfo(self, key):
+        return  hql.hql_info(key)

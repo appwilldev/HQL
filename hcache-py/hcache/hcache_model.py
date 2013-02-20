@@ -5,7 +5,8 @@ from hcache_config import TypeInfo
 
 class Model(object):
 
-    def __init__(self, tname, attrs, dirty_keys):
+    def __init__(self, tname, attrs, dirty_keys=None):
+        if not dirty_keys: dirty_keys = []
         self.type_name = tname
         tid = TypeInfo.model_type_id(self.type_name)
         if attrs["id"]:
@@ -29,15 +30,27 @@ class Model(object):
         ret['dirty_keys'] = self.dirty_keys
         return ret
 
+    @classmethod
+    def from_dict(clz, data):
+        tn = data.get("type_name")
+        tid = TypeInfo.model_type_id(tn)
+        if(tid<=0x80):
+            return Entity(tn, data.get("attributes"))
+        else:
+            return Relation(tn, data.get("attributes"),
+                            None,
+                            data.get("left"), data.get("right"))
 
 class Entity(Model):
 
-    def __init__(self, tname, attrs, dirty_keys):
+    def __init__(self, tname, attrs, dirty_keys=None):
+        if not dirty_keys: dirty_keys = []
         Model.__init__(self, tname, attrs, dirty_keys)
 
 class Relation(Model):
 
     def __init__(self, tname, attrs, dirty_keys, left, right):
+        if not dirty_keys: dirty_keys = []
         Model.__init__(self, tname, attrs, dirty_keys)
         self.left = left
         self.right = right
