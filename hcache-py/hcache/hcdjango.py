@@ -43,10 +43,33 @@ class HCManager(models.Manager):
     def __init__(self):
         models.Manager.__init__(self)
 
-    def get_list_by_hql(self, hql):
+    def get(self, *args, **kwargs):
+        nocache = False
+        if kwargs.has_key("nochache"):
+            nocache = kwargs["nocache"]
+            del kwargs["nocache"]
+        mclz = self.model #Model Class
+        if (not nocache) and mclz._hcache_kv and kwargs.has_key("id"):
+            tname = mclz.__name__.lower()
+            tid = TypeInfo.model_type_id(tname)
+            ret = hcache_capi.KVC.kv_get((kwargs["id"]<<8) | tid)
+            #TODO return a model
+            return ret
+        return models.Manager.get(self, *args, **kwargs)
+
+
+    def get_list_by_hql(self, hql, *args, **kwargs):
+        key = hql.cachekey()
+        key = utils.trim_info_ld(key)
+        info = hql.info()
         mclz = self.model #Model Class
         print mclz
-        #TODO
+        fn_list = None
+        if info.get("order_key"):
+            fn_list =  hcache_capi.KLC.slist_range(key, *args, **kwargs) or []
+        else:
+            fn_list = hcache_capi.KLC.list_range(key, *args, **kwargs) or []
+        return self.filter(pk__in=[x>>8 for x in fn_list])
 
 #----- methods for Model
 
@@ -94,7 +117,7 @@ def _method_save(self, force_insert=False, force_update=False, using=None):
 
     extdata = utils.extdata_collector(self._hcmodel, getter)
     new_xmtach_result = HQL.xmatch(self._hcmodel.to_dict(), getter)
-    #TODO manage list and kv and rels
+    # manage list and kv and rels
     print "old: ", old_xmtach_result
     print "new: ", new_xmtach_result
     fns = set(old_xmtach_result.keys()) | set(new_xmtach_result.keys())
@@ -124,8 +147,10 @@ def _method_delete(self, using=None):
     if self.id: # udpate, not create
         extdata = utils.extdata_collector(self._hcmodel, getter)
         old_xmtach_result = HQL.xmatch(self_dict, getter)
+        print "old:", old_xmtach_result
         self_dict["attributes"]["deleted"] = True
         new_xmtach_result = HQL.xmatch(self_dict, getter)
+        print "new:", new_xmtach_result
     else:
         old_xmtach_result = {}
         new_xmtach_result = {}
@@ -147,7 +172,7 @@ def _method_delete(self, using=None):
             rels.remove(self_fn)
             hcache_capi.KVC.kv_set(rkey,json.dumps(rels))
 
-    #TODO manage list and kv
+    # manage list and kv
     fns = set(old_xmtach_result.keys()) | set(new_xmtach_result.keys())
 
     for fn in fns:
@@ -215,7 +240,7 @@ class HCache(object):
 
         mclz.__init__ = _method_init
         mclz.save = _method_save
-        mclz.deleted = _method_delete
+        mclz.delete = _method_delete
         mclz.fullname = _method_fullname
         mclz.hcmodel = _method_hcmodel
         mclz.test_xmatch = _method_test_xmatch

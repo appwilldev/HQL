@@ -65,6 +65,8 @@ print(hql.hql2cachekey('select user where id > 100'));
 
 s='select user where tag contains ? by "," and select user where tag contains ? by ","  and select user where tag contains ? by "," limit 12'
 hql.register_troller(s)
+s='select user where tag = ?'
+hql.register_troller(s)
 print(hql.hql2cachekey(s))
 print(hql.hql2cachekey(s,true))
 print(hql.hql2cachekey(s,false))

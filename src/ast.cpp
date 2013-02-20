@@ -70,7 +70,7 @@ HQLOperand::HQLOperand(const JSONNode &n, OPERAND_TYPE ot)
         case JSON_STRING:
             {
                 type = STRING;
-                data.str = new string(n.as_string());
+                data.str = new string(string("\"") + n.as_string() + "\"");
                 break;
             }
         case JSON_NUMBER:
