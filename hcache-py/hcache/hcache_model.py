@@ -8,7 +8,10 @@ class Model(object):
     def __init__(self, tname, attrs, dirty_keys):
         self.type_name = tname
         tid = TypeInfo.model_type_id(self.type_name)
-        self.fullname = (attrs["id"]<<8) | tid
+        if attrs["id"]:
+            self.fullname = (attrs["id"]<<8) | tid
+        else:
+            self.fullname = 0
         self.attributes = attrs
         self.dirty_keys = dirty_keys
 

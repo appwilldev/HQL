@@ -267,18 +267,18 @@ extern "C" {
         const map<string, list<HQLNode*> >& trs = TrollersHolder::get_trollers(ns);
         map<string, list<HQLNode*> >::const_iterator it;
         for(it=trs.begin(); it != trs.end(); it++){
-            PyObject *key = Py_BuildValue("s", it->first.c_str());
             PyObject *value = PyList_New(it->second.size());
             list<HQLNode*>::const_iterator sit = it->second.begin();
             int i=0;
             for(; sit != it->second.end(); sit++){
-                PyObject *v0 = Py_BuildValue("s",(*sit)->to_hql().c_str());
+                //PyObject *v0 = Py_BuildValue("s",(*sit)->to_hql().c_str());
+                PyObject *v0 = PyString_FromString((*sit)->to_hql().c_str());
+                PyString_InternInPlace(&v0); /* XXX Should we really? */
                 PyList_SetItem(value, i, v0);
-                Py_DECREF(v0);
+                //Py_DECREF(v0);
                 i++;
             }
-            PyDict_SetItem(result, key, value);
-            Py_DECREF(key);
+            PyDict_SetItemString(result, it->first.c_str(), value);
             Py_DECREF(value);
         }
         return result;
@@ -286,7 +286,7 @@ extern "C" {
 
     static PyObject *HQL_hql_info(PyObject *self, PyObject *args){
         char *hql_str;
-        PyObject *key, *value;
+        PyObject *value;
         PyObject *result = PyDict_New();
         if (!PyArg_ParseTuple(args, "s", &hql_str)) {
             return result;
@@ -305,16 +305,12 @@ extern "C" {
                 if(tip == string::npos) break;
                 part_l = part_l.substr(tip+1);
 
-                key = Py_BuildValue("s", "time_in_key"); //key
                 value = Py_BuildValue("s", part_l.c_str()); //value
-                PyDict_SetItem(result, key, value);
-                Py_DECREF(key);
+                PyDict_SetItemString(result, "time_in_key", value);
                 Py_DECREF(value);
 
-                key = Py_BuildValue("s", "time_in_seconds"); //key
                 value = Py_BuildValue("l", atol(part_r.c_str())); //value
-                PyDict_SetItem(result, key, value);
-                Py_DECREF(key);
+                PyDict_SetItemString(result, "time_in_seconds", value);
                 Py_DECREF(value);
             }while(0);
 
@@ -324,25 +320,19 @@ extern "C" {
             if(m[0]=='O' && m[1]=='['){
                 m = m.substr(2);
                 string::size_type p = m.find_first_of(",");
-                key = Py_BuildValue("s", "order_key"); //key
                 value = Py_BuildValue("s", m.substr(0,p).c_str()); //value
-                PyDict_SetItem(result, key, value);
-                Py_DECREF(key);
+                PyDict_SetItemString(result, "order_key", value);
                 Py_DECREF(value);
 
                 m = m.substr(p+1);
-                key = Py_BuildValue("s", "order_asc"); //key
                 value = (m[0]=='A' ? Py_True : Py_False); //value
-                PyDict_SetItem(result, key, value);
-                Py_DECREF(key);
+                PyDict_SetItemString(result, "order_asc", value);
             }
             tmp = m.find_last_of(']');
             m = m.substr(tmp+1);
             if(m[0]=='L'){
-                key = Py_BuildValue("s", "limit"); //key
                 value = Py_BuildValue("l", atol(m.c_str()+1)); //value
-                PyDict_SetItem(result, key, value);
-                Py_DECREF(key);
+                PyDict_SetItemString(result, "limit", value);
                 Py_DECREF(value);
             }
         }else{ // a hql
@@ -351,41 +341,31 @@ extern "C" {
             if(n){
                 pair<string, uint64_t> ret = n->time_in();
                 if(ret.first.size()>0){
-                    key = Py_BuildValue("s", "time_in_key"); //key
                     value = Py_BuildValue("s", ret.first.c_str()); //value
-                    PyDict_SetItem(result, key, value);
-                    Py_DECREF(key);
+                    PyDict_SetItemString(result, "time_in_key", value);
                     Py_DECREF(value);
 
-                    key = Py_BuildValue("s", "time_in_seconds"); //key
                     value = Py_BuildValue("l", ret.second); //value
-                    PyDict_SetItem(result, key, value);
-                    Py_DECREF(key);
+                    PyDict_SetItemString(result, "time_in_seconds", value);
                     Py_DECREF(value);
                 }
                 if(n->get_type() == HQLNode::MISC && n->get_subtype()== HQLNode::LIMIT){
-                    key = Py_BuildValue("s", "limit"); //key
                     value = Py_BuildValue("l", atol(n->get_operand(1).as_str()->c_str())); //value
-                    PyDict_SetItem(result, key, value);
-                    Py_DECREF(key);
+                    PyDict_SetItemString(result, "limit", value);
                     Py_DECREF(value);
 
                     n = n->get_operand(0).as_node().get();
                 }
                 if(n->get_type() == HQLNode::MISC && n->get_subtype()== HQLNode::ORDER_BY){
-                    key = Py_BuildValue("s", "order_key"); //key
                     value = Py_BuildValue("s", n->get_operand(1).as_str()->c_str()); //value
-                    PyDict_SetItem(result, key, value);
-                    Py_DECREF(key);
+                    PyDict_SetItemString(result, "order_key", value);
                     Py_DECREF(value);
 
-                    key = Py_BuildValue("s", "order_asc"); //key
-                    PyDict_SetItem(
+                    PyDict_SetItemString(
                         result,
-                        key,
+                        "order_asc",
                         (n->get_operand(1).as_num()==0 ? Py_True : Py_False) //value
                     );
-                    Py_DECREF(key);
                 }
                 delete old_n;
             }
@@ -460,7 +440,7 @@ extern "C" {
             for(; sit != it->second.end(); sit++){
                 PyObject *lck = Py_BuildValue("s",sit->c_str());
                 PyList_SetItem(va, i, lck);
-                Py_DECREF(lck);
+                //Py_DECREF(lck);
                 i++;
             }
             PyDict_SetItem(result, fn, va);

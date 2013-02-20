@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # author : KDr2
 
+from hcache_hql import HQL
+
 def extdata_collector(m, getter, extmd_info = None):
     if not extmd_info: extmd_info = HQL.extmd_info()
     ret = {}

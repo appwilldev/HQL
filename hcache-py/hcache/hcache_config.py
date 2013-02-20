@@ -11,11 +11,13 @@ HCacheConfig={}
 class TypeInfo(object):
 
     #model_name -> type_id
-    __TYPES__={}
+    __TYPES__ = {}
     #type_id -> model_name
-    __RTYPES__={}
+    __RTYPES__ = {}
     #relation_name -> tuple(left_type,right_type)
-    __RELATION_TYPES__={}
+    __RELATION_TYPES__ = {}
+
+    __TYPE_CLASSES__ = {}
 
     @classmethod
     def reset_registers(cls):
@@ -25,12 +27,15 @@ class TypeInfo(object):
         cls.__RTYPES__ = {}
         old_rel_types = cls.__RELATION_TYPES__
         cls.__RELATION_TYPES__ = {}
-
+        cls.__TYPE_CLASSES__ = {}
         return (old_types,old_rtypes,old_rel_types)
 
+    @classmethod
+    def register_class(cls, name, clz):
+        cls.__TYPE_CLASSES__[name.lower()] = clz
 
     @classmethod
-    def register_entity(cls,name, type_id):
+    def register_entity(cls, name, type_id):
         tid = type_id&0xff
         cls.__TYPES__[name] = tid
         cls.__RTYPES__[tid] = name
