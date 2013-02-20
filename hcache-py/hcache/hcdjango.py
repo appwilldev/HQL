@@ -32,7 +32,7 @@ class HCManager(models.Manager):
     def get_list_by_hql(self, hql):
         mclz = self.model #Model Class
         print mclz
-
+        #TODO
 
 #----- methods for Model
 
@@ -46,29 +46,47 @@ def _method_test_xmatch(self):
     return HQL.xmatch(m.to_dict(), extdata)
 
 def _method_save(self, force_insert=False, force_update=False, using=None):
-    #TODO manage list and kv
-    update = True
-    if not self.id:
-        update = False
-
-    print self.hcmodel().to_dict()
+    old_xmtach_result = None
+    if self.id: # udpate, not create
+        extdata = utils.extdata_collector(self._hcmodel, getter)
+        old_xmtach_result = HQL.xmatch(self._hcmodel.to_dict(), getter)
+    else:
+        old_xmtach_result = {}
     models.Model.save(self,
                       force_insert = force_insert,
                       force_update = force_update,
                       using = using)
     self._hcmodel = self.hcmodel()
-
+    extdata = utils.extdata_collector(self._hcmodel, getter)
+    new_xmtach_result = HQL.xmatch(self._hcmodel.to_dict(), getter)
+    #TODO manage list and kv
+    print "old: ", old_xmtach_result
+    print "new: ", new_xmtach_result
 
 def _method_delete(self, using=None):
-    #TODO manage list and kv
+    old_xmtach_result = None
+    if self.id: # udpate, not create
+        extdata = utils.extdata_collector(self._hcmodel, getter)
+        old_xmtach_result = HQL.xmatch(self._hcmodel.to_dict(), getter)
+    else:
+        old_xmtach_result = {}
     delattr(self, "_hcmodel")
     models.Model.delete(self, using = using)
+    #TODO manage list and kv
+
+def _method_fullname(self):
+    if not self.id: return 0
+    mclz = self.__class__
+    tid = TypeInfo.model_type_id(mclz.__name__.lower())
+    return (self.id << 8) | tid
 
 def _method_hcmodel(self):
     type_name = self.__class__.__name__.lower()
     attrs = {}
     for f in self.__class__._meta.fields:
         attrs[f.name] = getattr(self, f.name)
+        if isinstance(attrs[f.name], models.Model):
+            attrs[f.name] = attrs[f.name].fullname()
     #endfor
 
     dirty_keys = None
@@ -110,6 +128,7 @@ class HCache(object):
         mclz.__init__ = _method_init
         mclz.save = _method_save
         mclz.deleted = _method_delete
+        mclz.fullname = _method_fullname
         mclz.hcmodel = _method_hcmodel
         mclz.test_xmatch = _method_test_xmatch
 
