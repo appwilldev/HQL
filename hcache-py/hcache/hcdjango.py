@@ -57,10 +57,13 @@ class HCManager(models.Manager):
             return ret
         return models.Manager.get(self, *args, **kwargs)
 
-    def get_by_fullname(self, fn):
-        tname = mclz.__name__.lower()
-        tid = TypeInfo.model_type_id(tname)
-        ret = hcache_capi.KVC.kv_get((kwargs["id"]<<8) | tid)
+    def get_by_fullname(self, fn, **kwargs):
+        tid = fn & 0xff
+        tname = TypeInfo.type_name(tid)
+        mclz =  TypeInfo.__TYPE_CLASSES__.get(tname, None)
+        if not mclz: return None
+        return mclz.objects.get(id=(fn>>8), **kwargs)
+
 
     def get_list_by_hql(self, hql, *args, **kwargs):
         key = hql.cachekey()
