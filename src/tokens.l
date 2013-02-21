@@ -63,6 +63,7 @@ using std::vector;
 <HQL>(?i:eval)                 return TOKEN(T_HQL_EACH);
 
 <HQL>(?i:all)                  return TOKEN(T_HQL_ALL);
+<HQL>(?i:null)                 return TOKEN(T_HQL_NIL);
 <HQL>(?i:true)                 return TOKEN(T_HQL_TRUE);
 <HQL>(?i:false)                return TOKEN(T_HQL_FALSE);
 

@@ -62,41 +62,41 @@ HQLOperand::HQLOperand(shared_ptr<HQLNode> n_ptr):
 HQLOperand::HQLOperand(const JSONNode &n, OPERAND_TYPE ot)
 {
     // ot == ID -> auto
-    if(ot == ID){
-        switch(n.type()){
-        case JSON_NULL:
-            type = NIL;
-            break;
-        case JSON_STRING:
-            {
+    switch(n.type()){
+    case JSON_NULL:
+        type = NIL;
+        break;
+    case JSON_STRING:
+        {
+            if(ot == ID){
+                type = ID;
+                data.str = new string(n.as_string());
+            }else{
                 type = STRING;
                 data.str = new string(string("\"") + n.as_string() + "\"");
-                break;
             }
-        case JSON_NUMBER:
-            {
-                type = NUM;
-                data.num = n.as_float();
-                break;
-            }
-        case JSON_BOOL:
-            {
-                type = BOOL;
-                data.boolean = n.as_bool();
-                break;
-            }
-        case JSON_ARRAY:
-        case JSON_NODE:
-            {
-                //TODO
-                break;
-            }
-        default:
-            type = NIL;
+            break;
         }
-    }else{
-
-
+    case JSON_NUMBER:
+        {
+            type = NUM;
+            data.num = n.as_float();
+            break;
+        }
+    case JSON_BOOL:
+        {
+            type = BOOL;
+            data.boolean = n.as_bool();
+            break;
+        }
+    case JSON_ARRAY:
+    case JSON_NODE:
+        {
+            //TODO
+            break;
+        }
+    default:
+        type = NIL;
     }
 }
 
@@ -267,6 +267,9 @@ string HQLOperand::as_code_hql() const
     switch(type){
     case ID:
         return *data.str;
+        break;
+    case NIL:
+        return "null";
         break;
     case BOOL:
         return data.boolean? "true" : "false";

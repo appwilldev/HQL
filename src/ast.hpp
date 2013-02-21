@@ -59,7 +59,7 @@ public:
         NODE,
     }OPERAND_TYPE;
 
-    HQLOperand():type(KW){ data.kw=AUTO;};
+    HQLOperand():type(NIL){};
     HQLOperand(const bool b):type(BOOL){ data.boolean=b;};
     HQLOperand(const KEYWORD k);
     HQLOperand(const uint64_t i);
@@ -68,7 +68,7 @@ public:
     HQLOperand(const string&, OPERAND_TYPE ot=ID);
     HQLOperand(const vector<string>*, OPERAND_TYPE ot=NUM_ARRAY);
     HQLOperand(shared_ptr<HQLNode>);
-    HQLOperand(const JSONNode&, OPERAND_TYPE ot=ID);
+    HQLOperand(const JSONNode&, OPERAND_TYPE ot=NIL);
     HQLOperand(const HQLOperand&);
     virtual ~HQLOperand();
 

@@ -61,6 +61,7 @@ require("test_data")
 ---
 
 print(hql.hql2hql('select user where id > 100'));
+print(hql.hql2hql('select user where id = null'));
 print(hql.hql2cachekey('select user where id > 100'));
 
 s='select user where tag contains ? by "," and select user where tag contains ? by ","  and select user where tag contains ? by "," limit 12'

@@ -58,7 +58,7 @@ void           yyset_extra ( YY_EXTRA_TYPE arbitrary_data , yyscan_t scanner);
 /* tokens */
 %token <token> T_HQL_BEGIN T_HQL_END
 %token <token> T_HQL_AUTO T_HQL_TAUTO T_HQL_EACH T_HQL_ALL
-%token <token> T_HQL_TRUE T_HQL_FALSE
+%token <token> T_HQL_NIL T_HQL_TRUE T_HQL_FALSE
 %token <token> T_HQL_HOST T_HQL_GUEST T_HQL_ASC T_HQL_DESC
 %token <token> T_HQL_AS T_HQL_BETWEEN
 %token <token> T_HQL_AND T_HQL_OR T_HQL_NOT
@@ -122,6 +122,9 @@ hql_cmp_arg: T_HQL_NUM {
                  $$=new HQLOperand(static_cast<HQLOperand::number>(atof($1->c_str())));
                }
                delete $1;
+             }
+           | T_HQL_NIL {
+               $$ = new HQLOperand();
              }
            | T_HQL_TRUE {
                $$ = new HQLOperand(true);

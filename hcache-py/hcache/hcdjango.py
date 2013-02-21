@@ -57,6 +57,10 @@ class HCManager(models.Manager):
             return ret
         return models.Manager.get(self, *args, **kwargs)
 
+    def get_by_fullname(self, fn):
+        tname = mclz.__name__.lower()
+        tid = TypeInfo.model_type_id(tname)
+        ret = hcache_capi.KVC.kv_get((kwargs["id"]<<8) | tid)
 
     def get_list_by_hql(self, hql, *args, **kwargs):
         key = hql.cachekey()
@@ -70,6 +74,24 @@ class HCManager(models.Manager):
         else:
             fn_list = hcache_capi.KLC.list_range(key, *args, **kwargs) or []
         return self.filter(pk__in=[x>>8 for x in fn_list])
+
+    def hcache_warmup(self, **kwargs):
+        mclz = self.model #Model Class
+        objs = None
+        if kwargs:
+            objs = self.filter(**kwargs)
+        else:
+            objs = self.all()
+        #endif
+        for o in objs:
+            result = HQL.xmatch(o._hcmodel.to_dict(), getter)
+            for fn, ls in result.iteritems():
+                m = o._hcmodel
+                if fn != o.fullname():
+                    m = None #TODO
+                #add to new list:
+                for x in ls:
+                    hcache_lm.list_push(x, fn, m, [], False, getter)
 
 #----- methods for Model
 
