@@ -488,6 +488,9 @@ hql : hql_ll {
     | T_HQL_BEGIN hql T_HQL_END {
         $$=$2;
       }
+    | '(' hql ')' {
+        $$=$2;
+      }
     | error {
         DEBUG("error");
         $$=new ErrorNode("syntax error");
