@@ -204,8 +204,8 @@ const set<string> LogicAndNode::get_ctypes() const{
 const set<string> LogicAndNode::get_rtypes() const{
     set<string> ret;
     for(size_t i=0; i<operands.size();i++){
-        if(operands[0].get_type()!=HQLOperand::NODE) continue;
-        set<string> ext = operands[0].as_node()->get_rtypes();
+        if(operands[i].get_type()!=HQLOperand::NODE) continue;
+        set<string> ext = operands[i].as_node()->get_rtypes();
         ret.insert(ext.begin(), ext.end());
     }
     return ret;
