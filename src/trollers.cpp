@@ -17,21 +17,18 @@
 void TrollersNamespace::register_troller(HQLNode *n){
     set<string> ctypes = n->get_ctypes();
     set<string>::iterator it = ctypes.begin();
-    bool added = false;
     for(; it!= ctypes.end(); it++){
         for(list<HQLNode*>::iterator nit = trollers[*it].begin();
             nit != trollers[*it].end(); ){
             if((*nit)->cache_key(false) == n->cache_key(false)){
-                added = true;
-                break;
+                // already added, via the only way: call this method
+                return;
             }else{
                 ++nit;
             }
         }
-        if(!added){
-            trollers[*it].push_back(n->copy());
-            extmd_info[*it] += n->get_xmdinfo();
-        }
+        trollers[*it].push_back(n->copy());
+        extmd_info[*it] += n->get_xmdinfo();
     }
 }
 
@@ -44,6 +41,7 @@ void TrollersNamespace::unregister_troller(HQLNode *n){
             if((*nit)->cache_key(false) == n->cache_key(false)){
                 delete *nit;
                 nit = trollers[*it].erase(nit);
+                break;
             }else{
                 ++nit;
             }

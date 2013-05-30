@@ -28,12 +28,12 @@ PY_EXTRA_FLAG := $(shell sh -c 'pkg-config python-2.7 --cflags 2>/dev/null')
 all: parser
 
 clean:
-	-rm parser.cpp parser.hpp tokens.cpp
-	-rm ../parser
-	-rm *.o *.so ../*.so
+	-rm -f parser.cpp parser.hpp tokens.cpp
+	-rm -f ../parser
+	-rm -f *.o *.so ../*.so
 
 distclean: clean
-	-rm ../vendor/*.a
+	-rm -f ../vendor/*.a
 	cd ../vendor/libjson; make clean
 
 # parser
