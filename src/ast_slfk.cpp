@@ -292,8 +292,14 @@ bool SLFKCondNode::validate() const
 }
 bool SLFKCondNode::has_semantic_each() const
 {
-    return operands[5].get_type() == HQLOperand::KW &&
-        operands[5].as_keyword() == ::EACH;
+    if(operands[5].get_type() == HQLOperand::KW){
+        return operands[5].as_keyword() == ::EACH;
+    }
+    if(operands[5].get_type() == HQLOperand::CONTAINS_ARG){
+        string a1 = (operands[5].as_str_array())->at(0);
+        return a1.size()==1 && a1[0] == 0;
+    }
+    return false;
 }
 
 pair<string, uint64_t> SLFKCondNode::time_in() const
