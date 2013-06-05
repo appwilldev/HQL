@@ -467,7 +467,7 @@ const map<uint64_t, set<string> > LogicAndNode::match(const Model &m, ModelGette
         if(rl_cnt==2){
             do{
                 string rel0 = operands[0].as_node()->get_operand(0).as_node()->get_etype();
-                string rel1 = operands[0].as_node()->get_operand(0).as_node()->get_etype();
+                string rel1 = operands[1].as_node()->get_operand(0).as_node()->get_etype();
                 if(rel0!=rel1) break;
                 if(TypeConfig::left_type(rel0)!=TypeConfig::right_type(rel0)) break;
 
