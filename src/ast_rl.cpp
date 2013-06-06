@@ -305,6 +305,13 @@ bool RLNode::validate() const
         error_info = "no IMPLICIT etype in statement: " + to_hql();
         return false;
     }
+    if(t>0){
+        if(tmp_operands[3-t].as_node()->get_type() != HQLNode::EACH){
+            error_info = "can not collect entities by relation bwtween SL and SL";
+            return false;
+        }
+    }
+
     return true;
 }
 
