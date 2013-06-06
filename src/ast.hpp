@@ -156,7 +156,7 @@ public:
 protected:
     NODE_TYPE type;
     NODE_SUBTYPE subtype;
-    TARGET_TYPE target;
+    mutable TARGET_TYPE target;
     mutable string etype; /** element type of this list */
     mutable string atype; /** auxilary type of this node (host type in FKNode)/*/
     uint16_t noperand; /** num of operands; unused */

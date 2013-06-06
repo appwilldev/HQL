@@ -361,6 +361,7 @@ const map<uint64_t, set<string> > LogicAndNode::match(const Model &m, ModelGette
         string host_type, guest_type;
         uint64_t host_fn = m.fullname();
         uint64_t guest_fn = 0;
+        uint64_t result_fn = 0;
         JSONNode _n;
         Model guest(_n);
 
@@ -385,6 +386,11 @@ const map<uint64_t, set<string> > LogicAndNode::match(const Model &m, ModelGette
                 }
             }
         }
+
+        if (etype == guest_type)
+        	result_fn = guest_fn;
+        else
+        	result_fn = host_fn;
 
         for(size_t i=0; i<operands.size(); ++i){
             if(operands[i].as_node()->get_type()!=HQLNode::SLFK){
@@ -452,7 +458,7 @@ const map<uint64_t, set<string> > LogicAndNode::match(const Model &m, ModelGette
 
         vector<vector<shared_ptr<HQLNode> > >::iterator it = fn_matches.begin();
         for(; it!=fn_matches.end(); ++it){
-            ret[guest_fn].insert(LogicAndNode(*it).cache_key(true));
+            ret[result_fn].insert(LogicAndNode(*it).cache_key(true));
         }
 
     }else if(fk_cnt<=0 and rl_cnt==1){
@@ -550,7 +556,7 @@ bool LogicAndNode::validate() const{
 
     //TODO: bug on nested node!
 
-    etype = fk_types[0];
+    string guest = fk_types[0];
     atype = fk_types[1];
 
     vector<HQLOperand> tmp_operands = operands;
@@ -560,24 +566,39 @@ bool LogicAndNode::validate() const{
     oit = tmp_operands.begin();
 
     while(oit!=obound){
-        if(oit->as_node()->get_etype()!=etype ||
+        if(oit->as_node()->get_etype()!=guest ||
            oit->as_node()->get_atype()!=atype){
             error_info = "2.logic operands have different etypes or atypes";
             return false;
         }
         oit++;
     }
-    if(oit!=operands.end()){
-        if(oit->as_node()->get_etype()==etype){
-            // this node is ok
-        }else if(oit->as_node()->get_etype()==atype){
+
+    bool has_explicit_target = false;
+    while(oit!=tmp_operands.end()){
+        if(oit->as_node()->get_etype()==guest ||
+           oit->as_node()->get_etype()==atype){
             if(oit->as_node()->get_target()==EXPLICIT){
-                error_info = "3.logic operands have different etypes or atypes";
-                return false;
+                if (!has_explicit_target){
+                    etype = oit->as_node()->get_etype();
+                    has_explicit_target = true;
+                    target = EXPLICIT;
+                } else {
+                    error_info = "3.logic operands have two or more explicit targets";
+                    return false;
+                }
             }
             // this node is ok
+        }else{
+            error_info = "4.logic operands have different etypes or atypes";
+            return false;
         }
+        oit++;
     }
+
+    if (!has_explicit_target)
+        etype = guest;
+
     return true;
 }
 
