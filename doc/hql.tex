@@ -169,7 +169,7 @@
     select follow between *@ and ?
 \end{verbatim}
 
-  如果集合目标处于 Relation HQL 的 left 或者 right 位置，则对应的关系另一方（right 或者 left）必需为 EACH，举例说明，下面几个HQL是不合法的：
+  如果集合目标处于 Relation HQL 的 left 或者 right 位置，则对应的关系另一方（right 或者 left）必须为 EACH，举例说明，下面几个HQL是不合法的：
 \begin{verbatim}
     select comment bewtween @ and *@
     select follow bewtween *@ and select user where age > 10
