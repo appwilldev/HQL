@@ -387,10 +387,11 @@ const map<uint64_t, set<string> > LogicAndNode::match(const Model &m, ModelGette
             }
         }
 
-        if (etype == guest_type)
+        if (etype == guest_type) {
         	result_fn = guest_fn;
-        else
+        } else {
         	result_fn = host_fn;
+        }
 
         for(size_t i=0; i<operands.size(); ++i){
             if(operands[i].as_node()->get_type()!=HQLNode::SLFK){
@@ -583,7 +584,7 @@ bool LogicAndNode::validate() const{
                     etype = oit->as_node()->get_etype();
                     has_explicit_target = true;
                     target = EXPLICIT;
-                } else {
+                } else if(oit->as_node()->get_etype() != etype){
                     error_info = "3.logic operands have two or more explicit targets";
                     return false;
                 }
