@@ -2,3 +2,8 @@
 
 * HQL
   see doc/hql.tex
+
+* Deps
+  bison 2.5-2.7
+  flex  2.5-2.7
+  gcc   4+
